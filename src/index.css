@@ -1,0 +1,17 @@
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+    background: rgb(3,7,30);
+  background: linear-gradient(90deg, rgba(3,7,30,1) 0%, rgba(106,4,15,1) 50%, rgba(208,0,0,1) 100%);
+
+}
+
+@font-face {
+  font-family: "light";
+  src: url(fonts/Montserrat-VariableFont_wght.ttf);
+}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

@@ -1,0 +1,593 @@
+[
+      {
+        "question": "What is JavaScript?",
+        "options": [
+          "A programming language",
+          "A styling language",
+          "A database query language",
+          "A markup language"
+        ],
+        "answer": "A programming language"
+      },
+      {
+        "question": "Which company developed JavaScript?",
+        "options": [
+          "Microsoft",
+          "Mozilla",
+          "Netscape",
+          "Google"
+        ],
+        "answer": "Netscape"
+      },
+      {
+        "question": "How do you declare a variable in JavaScript?",
+        "options": [
+          "var variableName",
+          "let variableName",
+          "const variableName",
+          "All of the above"
+        ],
+        "answer": "All of the above"
+      },
+      {
+        "question": "What is the difference between `let` and `var`?",
+        "options": [
+          "`let` is block-scoped, `var` is function-scoped",
+          "`let` and `var` are the same",
+          "`let` is hoisted, `var` is not",
+          "`var` is block-scoped, `let` is function-scoped"
+        ],
+        "answer": "`let` is block-scoped, `var` is function-scoped"
+      },
+      {
+        "question": "What is `const` used for in JavaScript?",
+        "options": [
+          "Declaring a constant variable",
+          "Declaring a variable that can be reassigned",
+          "Declaring a global variable",
+          "None of the above"
+        ],
+        "answer": "Declaring a constant variable"
+      },
+      {
+        "question": "What is the output of `console.log(typeof 42)`?",
+        "options": [
+          "number",
+          "string",
+          "boolean",
+          "undefined"
+        ],
+        "answer": "number"
+      },
+      {
+        "question": "What is the purpose of `===` in JavaScript?",
+        "options": [
+          "Compare values without type conversion",
+          "Compare values with type conversion",
+          "Assign a value",
+          "None of the above"
+        ],
+        "answer": "Compare values without type conversion"
+      },
+      {
+        "question": "What does `NaN` stand for in JavaScript?",
+        "options": [
+          "Not a Number",
+          "Null and Null",
+          "Negative and Null",
+          "Not a Node"
+        ],
+        "answer": "Not a Number"
+      },
+      {
+        "question": "What is the result of `null == undefined`?",
+        "options": [
+          "true",
+          "false",
+          "TypeError",
+          "ReferenceError"
+        ],
+        "answer": "true"
+      },
+      {
+        "question": "How do you create a function in JavaScript?",
+        "options": [
+          "function myFunction() {}",
+          "create function myFunction()",
+          "new Function myFunction()",
+          "function = myFunction()"
+        ],
+        "answer": "function myFunction() {}"
+      },
+      {
+        "question": "How do you call a function named `myFunction`?",
+        "options": [
+          "myFunction()",
+          "call myFunction()",
+          "execute myFunction()",
+          "invoke myFunction()"
+        ],
+        "answer": "myFunction()"
+      },
+      {
+        "question": "What is the purpose of `return` in a function?",
+        "options": [
+          "Exits the function and returns a value",
+          "Assigns a value to a variable",
+          "Calls another function",
+          "None of the above"
+        ],
+        "answer": "Exits the function and returns a value"
+      },
+      {
+        "question": "What is an arrow function in JavaScript?",
+        "options": [
+          "A shorthand for writing functions",
+          "A function that doesn't have parameters",
+          "A function that automatically returns",
+          "None of the above"
+        ],
+        "answer": "A shorthand for writing functions"
+      },
+      {
+        "question": "What is an object in JavaScript?",
+        "options": [
+          "A collection of key-value pairs",
+          "An array of values",
+          "A function",
+          "None of the above"
+        ],
+        "answer": "A collection of key-value pairs"
+      },
+      {
+        "question": "How do you create an object in JavaScript?",
+        "options": [
+          "let obj = {}",
+          "let obj = Object()",
+          "let obj = new Object()",
+          "All of the above"
+        ],
+        "answer": "All of the above"
+      },
+      {
+        "question": "How do you access an object's property?",
+        "options": [
+          "objectName.property",
+          "objectName[property]",
+          "Both A and B",
+          "None of the above"
+        ],
+        "answer": "Both A and B"
+      },
+      {
+        "question": "What is an array in JavaScript?",
+        "options": [
+          "A collection of elements",
+          "A collection of key-value pairs",
+          "A function",
+          "None of the above"
+        ],
+        "answer": "A collection of elements"
+      },
+      {
+        "question": "How do you create an array in JavaScript?",
+        "options": [
+          "let arr = []",
+          "let arr = new Array()",
+          "Both A and B",
+          "None of the above"
+        ],
+        "answer": "Both A and B"
+      },
+      {
+        "question": "How do you access an element in an array?",
+        "options": [
+          "arrayName[index]",
+          "arrayName.index",
+          "arrayName[index]()",
+          "None of the above"
+        ],
+        "answer": "arrayName[index]"
+      },
+      {
+        "question": "What is the output of `[1, 2, 3].length`?",
+        "options": [
+          "3",
+          "2",
+          "undefined",
+          "TypeError"
+        ],
+        "answer": "3"
+      },
+      {
+        "question": "What does `push()` do to an array?",
+        "options": [
+          "Adds an element to the end of the array",
+          "Removes an element from the beginning of the array",
+          "Adds an element to the beginning of the array",
+          "Removes an element from the end of the array"
+        ],
+        "answer": "Adds an element to the end of the array"
+      },
+      {
+        "question": "What does `pop()` do to an array?",
+        "options": [
+          "Removes the last element of the array",
+          "Adds an element to the end of the array",
+          "Removes the first element of the array",
+          "Adds an element to the beginning of the array"
+        ],
+        "answer": "Removes the last element of the array"
+      },
+      {
+        "question": "What is the output of `typeof []`?",
+        "options": [
+          "object",
+          "array",
+          "undefined",
+          "function"
+        ],
+        "answer": "object"
+      },
+      {
+        "question": "What is the output of `typeof null`?",
+        "options": [
+          "object",
+          "null",
+          "undefined",
+          "boolean"
+        ],
+        "answer": "object"
+      },
+      {
+        "question": "What is the output of `[] + []` in JavaScript?",
+        "options": [
+          "Empty string",
+          "Empty array",
+          "undefined",
+          "0"
+        ],
+        "answer": "Empty string"
+      },
+      {
+        "question": "What is the purpose of `isNaN()` in JavaScript?",
+        "options": [
+          "Check if a value is Not-a-Number",
+          "Check if a value is a number",
+          "Convert a value to a number",
+          "None of the above"
+        ],
+        "answer": "Check if a value is Not-a-Number"
+      },
+      {
+        "question": "What does `==` do in JavaScript?",
+        "options": [
+          "Compares values with type coercion",
+          "Compares values without type coercion",
+          "Assigns a value",
+          "None of the above"
+        ],
+        "answer": "Compares values with type coercion"
+      },
+      {
+        "question": "What is the difference between `==` and `===`?",
+        "options": [
+          "`==` compares with type conversion, `===` compares without type conversion",
+          "`===` compares with type conversion, `==` compares without type conversion",
+          "`==` is for numbers, `===` is for strings",
+          "There is no difference"
+        ],
+        "answer": "`==` compares with type conversion, `===` compares without type conversion"
+      },
+      {
+        "question": "What is the use of `JSON.stringify()`?",
+        "options": [
+          "Convert a JavaScript object to a JSON string",
+          "Convert a JSON string to a JavaScript object",
+          "Parse a JSON file",
+          "None of the above"
+        ],
+        "answer": "Convert a JavaScript object to a JSON string"
+      },
+      {
+        "question": "What is the use of `JSON.parse()`?",
+        "options": [
+          "Convert a JSON string to a JavaScript object",
+          "Convert a JavaScript object to a JSON string",
+          "Stringify a JSON object",
+          "None of the above"
+        ],
+        "answer": "Convert a JSON string to a JavaScript object"
+      },
+      {
+        "question": "What is the purpose of `setTimeout()` in JavaScript?",
+        "options": [
+          "Executes a function after a specified delay",
+          "Executes a function immediately",
+          "Executes a function repeatedly",
+          "None of the above"
+        ],
+        "answer": "Executes a function after a specified delay"
+      },
+      {
+        "question": "What is the purpose of `setInterval()` in JavaScript?",
+        "options": [
+          "Executes a function repeatedly with a delay",
+          "Executes a function once after a delay",
+          "Executes a function immediately",
+          "None of the above"
+        ],
+        "answer": "Executes a function repeatedly with a delay"
+      },
+      {
+        "question": "What is the purpose of `clearTimeout()`?",
+        "options": [
+          "Cancels a timeout set by `setTimeout()`",
+          "Cancels an interval set by `setInterval()`",
+          "Executes a function immediately",
+          "None of the above"
+        ],
+        "answer": "Cancels a timeout set by `setTimeout()`"
+      },
+      {
+        "question": "What is the output of `typeof function() {}`?",
+        "options": [
+          "function",
+          "object",
+          "undefined",
+          "string"
+        ],
+        "answer": "function"
+      },
+      {
+        "question": "What is an IIFE (Immediately Invoked Function Expression)?",
+        "options": [
+          "A function that runs as soon as it is defined",
+          "A function that doesn't need a name",
+          "A function that is defined inside another function",
+          "None of the above"
+        ],
+        "answer": "A function that runs as soon as it is defined"
+      },
+      {
+        "question": "What is a closure in JavaScript?",
+        "options": [
+          "A function that remembers its lexical scope",
+          "A function that doesn't have parameters",
+          "A function that is defined inside an object",
+          "None of the above"
+        ],
+        "answer": "A function that remembers its lexical scope"
+      },
+      {
+        "question": "What is the `this` keyword in JavaScript?",
+        "options": [
+          "Refers to the object it belongs to",
+          "Refers to the global object",
+          "Refers to the parent function",
+          "None of the above"
+        ],
+        "answer": "Refers to the object it belongs to"
+      },
+      {
+        "question": "How do you handle exceptions in JavaScript?",
+        "options": [
+          "Using try...catch",
+          "Using if...else",
+          "Using switch...case",
+          "Using throw statement"
+        ],
+        "answer": "Using try...catch"
+      },
+      {
+        "question": "What is the purpose of the `throw` statement?",
+        "options": [
+          "Throwing user-defined exceptions",
+          "Breaking out of a loop",
+          "Declaring an error",
+          "None of the above"
+        ],
+        "answer": "Throwing user-defined exceptions"
+      },
+      {
+        "question": "What is `undefined` in JavaScript?",
+        "options": [
+          "A variable that has been declared but not assigned a value",
+          "A variable that doesn't exist",
+          "A keyword to initialize a variable",
+          "None of the above"
+        ],
+        "answer": "A variable that has been declared but not assigned a value"
+      },
+      {
+        "question": "What is the output of `typeof undefined`?",
+        "options": [
+          "undefined",
+          "null",
+          "object",
+          "boolean"
+        ],
+        "answer": "undefined"
+      },
+      {
+        "question": "What is the output of `typeof null`?",
+        "options": [
+          "object",
+          "null",
+          "undefined",
+          "boolean"
+        ],
+        "answer": "object"
+      },
+      {
+        "question": "What is the output of `typeof []`?",
+        "options": [
+          "object",
+          "array",
+          "undefined",
+          "function"
+        ],
+        "answer": "object"
+      },
+      {
+        "question": "What is the output of `typeof NaN`?",
+        "options": [
+          "number",
+          "NaN",
+          "undefined",
+          "boolean"
+        ],
+        "answer": "number"
+      },
+      {
+        "question": "How do you check if a variable is an array?",
+        "options": [
+          "Array.isArray(variable)",
+          "typeof variable === 'array'",
+          "variable instanceof Array",
+          "Both A and C"
+        ],
+        "answer": "Both A and C"
+      },
+      {
+        "question": "What is the purpose of `map()` method in arrays?",
+        "options": [
+          "To create a new array by applying a function to each element of the original array",
+          "To remove elements from an array",
+          "To add elements to an array",
+          "To find an element in an array"
+        ],
+        "answer": "To create a new array by applying a function to each element of the original array"
+      },
+      {
+        "question": "What is the purpose of `filter()` method in arrays?",
+        "options": [
+          "To create a new array with elements that pass a test",
+          "To remove elements from an array",
+          "To add elements to an array",
+          "To find an element in an array"
+        ],
+        "answer": "To create a new array with elements that pass a test"
+      },
+      {
+        "question": "What is the purpose of `reduce()` method in arrays?",
+        "options": [
+          "To reduce an array to a single value",
+          "To remove elements from an array",
+          "To add elements to an array",
+          "To find an element in an array"
+        ],
+        "answer": "To reduce an array to a single value"
+      },
+      {
+        "question": "What is the difference between `forEach()` and `map()`?",
+        "options": [
+          "`map()` returns a new array, `forEach()` does not",
+          "`forEach()` returns a new array, `map()` does not",
+          "`forEach()` is for filtering, `map()` is for transforming",
+          "`map()` is for filtering, `forEach()` is for transforming"
+        ],
+        "answer": "`map()` returns a new array, `forEach()` does not"
+      },
+      {
+        "question": "What is event bubbling in JavaScript?",
+        "options": [
+          "The event propagates from the innermost to the outermost element",
+          "The event propagates from the outermost to the innermost element",
+          "The event stops at the innermost element",
+          "None of the above"
+        ],
+        "answer": "The event propagates from the innermost to the outermost element"
+      },
+      {
+        "question": "What is event delegation?",
+        "options": [
+          "Attaching an event listener to a parent element to handle events from child elements",
+          "Attaching an event listener to a child element to handle events from the parent",
+          "Attaching multiple event listeners to one element",
+          "None of the above"
+        ],
+        "answer": "Attaching an event listener to a parent element to handle events from child elements"
+      },
+      {
+        "question": "What is a promise in JavaScript?",
+        "options": [
+          "An object that represents the eventual completion (or failure) of an asynchronous operation",
+          "A function that executes after a specified delay",
+          "A method to handle events",
+          "None of the above"
+        ],
+        "answer": "An object that represents the eventual completion (or failure) of an asynchronous operation"
+      },
+      {
+        "question": "What are the states of a promise?",
+        "options": [
+          "Pending, Fulfilled, Rejected",
+          "Pending, Completed, Rejected",
+          "Waiting, Fulfilled, Rejected",
+          "None of the above"
+        ],
+        "answer": "Pending, Fulfilled, Rejected"
+      },
+      {
+        "question": "What is the purpose of `async` and `await` in JavaScript?",
+        "options": [
+          "To handle asynchronous code in a cleaner way",
+          "To execute code synchronously",
+          "To create promises",
+          "None of the above"
+        ],
+        "answer": "To handle asynchronous code in a cleaner way"
+      },
+      {
+        "question": "What is the difference between `call()` and `apply()`?",
+        "options": [
+          "`call()` accepts arguments individually, `apply()` accepts arguments as an array",
+          "`apply()` accepts arguments individually, `call()` accepts arguments as an array",
+          "`call()` is for synchronous functions, `apply()` is for asynchronous functions",
+          "`apply()` is for synchronous functions, `call()` is for asynchronous functions"
+        ],
+        "answer": "`call()` accepts arguments individually, `apply()` accepts arguments as an array"
+      },
+      {
+        "question": "What is the purpose of `bind()`?",
+        "options": [
+          "To create a new function with a specific `this` value",
+          "To execute a function",
+          "To bind data to an element",
+          "None of the above"
+        ],
+        "answer": "To create a new function with a specific `this` value"
+      },
+      {
+        "question": "What is the difference between `localStorage` and `sessionStorage`?",
+        "options": [
+          "`localStorage` persists data indefinitely, `sessionStorage` persists data for a session",
+          "`sessionStorage` persists data indefinitely, `localStorage` persists data for a session",
+          "`localStorage` is synchronous, `sessionStorage` is asynchronous",
+          "`sessionStorage` is synchronous, `localStorage` is asynchronous"
+        ],
+        "answer": "`localStorage` persists data indefinitely, `sessionStorage` persists data for a session"
+      },
+      {
+        "question": "What is the purpose of `fetch()` in JavaScript?",
+        "options": [
+          "To make HTTP requests to a server",
+          "To retrieve data from local storage",
+          "To handle events",
+          "None of the above"
+        ],
+        "answer": "To make HTTP requests to a server"
+      },
+      {
+        "question": "What is the difference between `GET` and `POST` requests?",
+        "options": [
+          "`GET` is used to retrieve data, `POST` is used to send data",
+          "`POST` is used to retrieve data, `GET` is used to send data",
+          "`GET` and `POST` are identical",
+          "None of the above"
+        ],
+        "answer": "`GET` is used to retrieve data, `POST` is used to send data"
+      }
+    ]
+  
