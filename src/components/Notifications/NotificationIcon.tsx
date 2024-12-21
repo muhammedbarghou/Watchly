@@ -1,3 +1,4 @@
+// @ts-ignore
 import React from 'react';
 import { Bell, MessageCircle, ThumbsUp, UserPlus } from 'lucide-react';
 

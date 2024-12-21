@@ -3,7 +3,7 @@ import { Lock } from 'lucide-react';
 
 export const PasswordStep = ({
   formData,
-  errors,
+
   passwordValidations,
   handleChange,
   prevStep,

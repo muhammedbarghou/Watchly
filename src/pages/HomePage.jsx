@@ -25,16 +25,10 @@ const HomePage = () => {
     }
   };
 
-  const handleThemeChange = (theme) => {
-    const newTheme = convertStringToTheme(theme);
-    setCurrentTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-  };
+
 
   const handleComponentChange = (component) => setActiveComponent(component);
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-  const handleLogout = () => navigate('/');
-
   const navigation = [
     {
       name: 'Home',
