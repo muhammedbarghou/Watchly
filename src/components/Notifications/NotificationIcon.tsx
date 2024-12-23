@@ -1,6 +1,6 @@
 // @ts-ignore
 import React from 'react';
-import { Bell, MessageCircle, ThumbsUp, UserPlus } from 'lucide-react';
+import { Bell,  UserPlus } from 'lucide-react';
 
 export type NotificationType = 'friendRequest' | 'roomRequest';
 

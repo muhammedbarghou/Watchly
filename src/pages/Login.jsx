@@ -3,7 +3,7 @@ import { AuthForm } from '../components/auth/AuthForm.jsx';
 import { AuthFeatures } from '../components/auth/AuthFeatures.jsx';
 
 
-const Login = () => {
+function Login  ()  {
   return (
     <section className="w-screen h-screen dark:bg-gray-950">
       <div className="grid grid-cols-1 lg:grid-cols-2">

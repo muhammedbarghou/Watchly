@@ -1,5 +1,5 @@
 import React from "react";
-import { X, PanelRightOpen } from "lucide-react";
+import { X, PanelRightOpen,Search  } from "lucide-react";
 import NotificationsPanel from "../Notifications/NotificationsPanel.tsx";
 import UserProfileDropdown from "../HomePage/Home/Userprofiledropdown.jsx";
 
@@ -26,19 +26,26 @@ export const Header = ({
       <h3 className="text-gray-800 dark:text-gray-200 font-semibold text-lg sm:text-xl">
         {activeComponent.charAt(0).toUpperCase() + activeComponent.slice(1)}
       </h3>
-
       {/* Right Side: Notifications & User Profile */}
-      <div className="flex items-center space-x-6">
-        {/* Notifications */}
-        <div className="relative">
-          <NotificationsPanel />
-        </div>
+        <div className="flex items-center space-x-6">
+            {/* Notifications */}
+            <div className="relative">
+                <Search className={"absolute top-0 bottom-0 w-6 h-6 my-auto text-gray-400 left-3"}/>
+                <input
+                    type="text"
+                    placeholder="Search"
+                    className="w-full py-2 pl-12 pr-4 text-gray-500 border rounded-md outline-none bg-gray-50 focus:bg-white focus:border-red-800"
+                />
+            </div>
+            <div className="relative">
+                <NotificationsPanel/>
+            </div>
 
-        {/* User Profile Dropdown */}
-        <div className="relative">
-          <UserProfileDropdown />
+            {/* User Profile Dropdown */}
+            <div className="relative">
+                <UserProfileDropdown/>
+            </div>
         </div>
-      </div>
     </nav>
   );
 };

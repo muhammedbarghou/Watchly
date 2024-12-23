@@ -1,210 +1,256 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { validatePassword, validateUsername, validateEmail, validatePhone } from '../utils/validations';
-import { StepIndicator } from '../components/FormSteps/StepIndicator';
-import { PersonalInfo } from '../components/FormSteps/PersonalInfo';
-import { PasswordStep } from '../components/FormSteps/PasswordStep';
-import { ProfilePicture } from '../components/FormSteps/ProfilePicture';
-import { PrivacyTerms } from '../components/FormSteps/PrivacyTerms';
-import { Success } from '../components/FormSteps/Success';
-import { ThemeToggle } from '../components/theme/ThemeToggle';
-import { db, storage } from "../firebase";
-import { collection, addDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import React, { useState } from "react";
+import { ThemeToggle } from "../components/theme/ThemeToggle";
+import { User, Mail, Lock,MessageCircleWarning,Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase";
+import { doc, setDoc } from "firebase/firestore"; 
+import { db } from "../firebase"; 
+import * as Dialog from "@radix-ui/react-dialog";
 
 
-
-const SignUp = () => {
-  const [step, setStep] = useState({
-    stepsItems: ["Personal Information", "Password", "Profile Picture", "Terms and Conditions"],
-    currentStep: 1
-  });
-  
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    phone: '',
-    dob: '',
-    password: '',
-    confirmPassword: '',
-    profilePicture: null,
-    agreeTerms: false,
-  });
-
-  const [errors, setErrors] = useState({});
-  const [passwordValidations, setPasswordValidations] = useState({
-    length: false,
-    uppercase: false,
-    number: false,
-    specialChar: false,
-  });
-
+function SignUp() {
   const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
-  const nextStep = () => setStep((prevStep) => ({
-    ...prevStep,
-    currentStep: (prevStep.currentStep < 5 ? prevStep.currentStep + 1 : prevStep.currentStep)
-  }));
-
-  const prevStep = () => setStep((prevStep) => ({
-    ...prevStep,
-    currentStep: (prevStep.currentStep > 1 ? prevStep.currentStep - 1 : prevStep.currentStep)
-  }));
-
-  const handleChange = (input) => (e) => {
-    const value = e.target.value;
-    console.log(`Handling change for ${input}:`, value);
-    
-    if (input === 'username') {
-      const cleanUsername = value.toLowerCase().replace(/[^a-z]/g, '');
-      const usernameValidation = validateUsername(cleanUsername);
-      console.log('Username validation:', usernameValidation);
-      
-      setErrors((prev) => {
-        const newErrors = {
-          ...prev,
-          username: !usernameValidation.length ? 'Username must be between 8 and 15 characters.' : '',
-        };
-        console.log('New errors after username validation:', newErrors);
-        return newErrors;
-      });
-      
-      setFormData((prev) => ({ ...prev, username: cleanUsername }));
-      return;
-    }
-    
-    if (input === 'password') {
-      setPasswordValidations(validatePassword(value));
-    }
-    
-    if (input === 'email') {
-      const isValid = validateEmail(value);
-      console.log('Email validation:', isValid);
-      setErrors((prev) => {
-        const newErrors = {
-          ...prev,
-          email: !isValid ? 'Invalid email format.' : '',
-        };
-        console.log('New errors after email validation:', newErrors);
-        return newErrors;
-      });
-    }
-    
-    if (input === 'phone') {
-      const isValid = validatePhone(value);
-      console.log('Phone validation:', isValid);
-      setErrors((prev) => {
-        const newErrors = {
-          ...prev,
-          phone: !isValid ? 'Phone number must be 10 digits.' : '',
-        };
-        console.log('New errors after phone validation:', newErrors);
-        return newErrors;
-      });
-    }
-    
-    setFormData((prev) => ({ ...prev, [input]: value }));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData((prev) => ({ ...prev, profilePicture: e.target.files[0] }));
-    }
-  };
-
-  const handleCheckboxChange = (e) => {
-    setFormData((prev) => ({ ...prev, agreeTerms: e.target.checked }));
+  const generateUserId = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString(); // Generates a 6-digit string
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
-    if (!formData.agreeTerms) {
-      alert("You must agree to the terms and conditions.");
-      return;
-    }
-  
+    setError(null);
+    setSuccess(null);
+
     try {
-      let profilePictureURL = "";
-  
-      // If there's a profile picture, upload it to Firebase Storage
-      if (formData.profilePicture) {
-        const storageRef = ref(storage, `profilePictures/${formData.username}`);
-        await uploadBytes(storageRef, formData.profilePicture);
-        profilePictureURL = await getDownloadURL(storageRef);
-      }
-  
-      // Add user data to Firestore
-      await addDoc(collection(db, "users"), {
-        username: formData.username,
+      const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          formData.email,
+          formData.password
+      );
+
+      const user = userCredential.user;
+
+      const userId = generateUserId();
+
+      await setDoc(doc(db, "users", user.uid), {
+        name: formData.name,
         email: formData.email,
-        phone: formData.phone,
-        birthday: formData.dob,
-        profilePictureURL,
+        userId: userId,
         createdAt: new Date(),
       });
-  
-      alert("User registered successfully!");
-      setStep((prev) => ({ ...prev, currentStep: 5 }));
-    } catch (error) {
-      console.error("Error adding document: ", error);
-      alert("Failed to register user.");
+
+      setSuccess();
+
+    } catch (err) {
+      setError(err.message);
     }
   };
 
-  const handleBack = () => {
-    navigate('/');
+  const handleClick = () => {
+    navigate("/login");
   };
 
   return (
-    <div className="flex justify-center flex-col items-center h-screen w-screen">
-      <nav className='flex justify-between items-center w-full h-16 bg-white dark:bg-gray-950 border-b border-gray-800 dark:border-gray-100 px-4'>
-        <button onClick={handleBack} className='bg-[#d00000] text-white text-lg py-2 px-4 rounded-md'>Back</button>
-        <ThemeToggle />
-      </nav>
-      <div className="flex items-center flex-col bg-white h-screen w-full dark:bg-gray-950 relative">
-        <StepIndicator stepsItems={step.stepsItems} currentStep={step.currentStep} />
-        <main className="flex flex-col justify-center items-center h-full w-full">
-          {step.currentStep === 1 && (
-            <PersonalInfo
-              formData={formData}
-              errors={errors}
-              handleChange={handleChange}
-              nextStep={nextStep}
-            />
-          )}
-          {step.currentStep === 2 && (
-            <PasswordStep
-              formData={formData}
-              errors={errors}
-              passwordValidations={passwordValidations}
-              handleChange={handleChange}
-              prevStep={prevStep}
-              nextStep={nextStep}
-            />
-          )}
-          {step.currentStep === 3 && (
-            <ProfilePicture
-              handleFileChange={handleFileChange}
-              prevStep={prevStep}
-              nextStep={nextStep}
-            />
-          )}
-          {step.currentStep === 4 && (
-            <PrivacyTerms
-              formData={formData}
-              handleCheckboxChange={handleCheckboxChange}
-              handleSubmit={handleSubmit}
-              prevStep={prevStep}
-            />
-          )}
-          {step.currentStep === 5 && (
-            <Success handleBack={handleBack} />
-          )}
-        </main>
+      <div className="font-[sans-serif] bg-white max-w-4xl flex items-center mx-auto md:h-screen p-4 dark:bg-transparent">
+        <div className="grid md:grid-cols-3 items-center shadow-[0_2px_10px_-3px_rgba(6,81,237,0.3)] rounded-xl overflow-hidden">
+          <aside className="max-md:order-1 flex flex-col justify-center space-y-16 max-md:mt-16 min-h-full bg-gradient-to-r from-[#6a040f] to-[#d00000] lg:px-8 px-4 py-4">
+            <div>
+              <h4 className="text-white text-lg font-semibold">Create Your Account</h4>
+              <p className="text-[13px] text-gray-300 mt-3 leading-relaxed">
+                Welcome to our registration page! Get started by creating your
+                account.
+              </p>
+            </div>
+            <div>
+              <h4 className="text-white text-lg font-semibold">
+                Simple & Secure Registration
+              </h4>
+              <p className="text-[13px] text-gray-300 mt-3 leading-relaxed">
+                Our registration process is designed to be straightforward and
+                secure. We prioritize your privacy and data security.
+              </p>
+            </div>
+          </aside>
+
+          <form
+              onSubmit={handleSubmit}
+              className="md:col-span-2 w-full py-6 px-6 sm:px-16 dark:bg-gray-950"
+          >
+            <div className="mb-6 flex-row">
+              <h3 className="text-gray-800 text-2xl font-bold dark:text-white">
+                Create an account
+              </h3>
+              <ThemeToggle />
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="text-gray-800 text-sm mb-2 block dark:text-white">
+                  Name
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                      name="name"
+                      type="text"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className="text-gray-800 dark:text-white bg-white dark:bg-gray-900  w-full text-sm px-4 py-2.5 rounded-md "
+                      placeholder="Enter name"
+                  />
+                  <User className={"w-4 h-4 absolute right-4 dark:text-white"} />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-gray-800 text-sm mb-2 block dark:text-white">
+                  Email Id
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="text-gray-800 dark:text-white bg-white dark:bg-gray-900  w-full text-sm px-4 py-2.5 rounded-md"
+                      placeholder="Enter email"
+                  />
+                  <Mail className={"w-4 h-4 absolute right-4 dark:text-white"} />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-gray-800 text-sm mb-2 block dark:text-white">
+                  Password
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                      name="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="text-gray-800 dark:text-white bg-white dark:bg-gray-900  w-full text-sm px-4 py-2.5 rounded-md"
+                      placeholder="Enter password"
+                  />
+                  <Lock className={"w-4 h-4 absolute right-4 dark:text-white"} />
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                    id="remember-me"
+                    name="remember-me"
+                    type="checkbox"
+                    className="h-4 w-4 shrink-0 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label
+                    htmlFor="remember-me"
+                    className="ml-3 block text-sm text-gray-800 dark:text-white"
+                >
+                  I accept the Terms and Conditions
+                </label>
+              </div>
+            </div>
+
+            {error && 
+            <Dialog.Root open={!!error} onOpenChange={() => setError(null)}>
+              <Dialog.Portal>
+                <Dialog.Overlay className="fixed inset-0 w-full h-full bg-black opacity-50" />
+                <Dialog.Content className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] px-4 w-full max-w-lg">
+                  <div className="bg-white dark:bg-gray-900 rounded-md shadow-lg px-4 py-6 sm:flex">
+                    <div className="flex items-center justify-center flex-none w-12 h-12 mx-auto bg-red-100 rounded-full">
+                      <MessageCircleWarning className="w-6 h-6 text-red-600"/>
+                    </div>
+                    <div className="mt-2 text-center sm:ml-4 sm:text-left">
+                      <Dialog.Title className="text-lg font-medium text-gray-800 dark:text-white">
+                        You must enter your information
+                      </Dialog.Title>
+                      <Dialog.Description className="mt-2 text-sm leading-relaxed text-gray-500">
+                        for you to benefit from our services You must enter your informations
+                      </Dialog.Description>
+                      <div className="items-center gap-2 mt-3 text-sm sm:flex">
+                        <Dialog.Close asChild>
+                          <button className="w-full mt-2 p-2.5 flex-1 text-white bg-red-600 rounded-md ring-offset-2 ring-red-600 focus:ring-2">
+                            Close
+                          </button>
+                        </Dialog.Close>
+                      </div>
+                    </div>
+                  </div>
+                </Dialog.Content>
+              </Dialog.Portal>
+            </Dialog.Root>
+            }
+            {success &&
+            <Dialog.Root open={!!success} onOpenChange={() => setSuccess(null)}>
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 w-full h-full bg-black opacity-50" />
+              <Dialog.Content className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-full max-w-lg mx-auto px-4">
+                <div className="bg-white rounded-md shadow-lg px-4 py-6 dark:bg-gray-900">
+                  <div className=" flex items-center justify-center w-12 h-12 mx-auto bg-green-100 rounded-full">
+                    <Check className="w-6 h-6 text-green-600"/>
+                  </div>
+                  <Dialog.Title className="text-lg font-medium text-gray-800 text-center mt-3 dark:text-white">
+                    {" "}
+                    Successfully registered!
+                  </Dialog.Title>
+                  <Dialog.Description className="mt-1 text-sm leading-relaxed text-center text-gray-500 dark:text-gray-400">
+                    Your account has been successfully created
+                  </Dialog.Description>
+                  <div className="items-center gap-2 mt-3 text-sm sm:flex">
+                      <button onClick={() => navigate('/login')} className="w-full mt-2 p-2.5 flex-1 text-white bg-red-600 rounded-md outline-none ring-offset-2 ring-indigo-600 focus:ring-2">
+                        Go to login
+                      </button>
+                    <Dialog.Close asChild>
+                      <button
+                        className="w-full mt-2 p-2.5 flex-1 text-gray-800 rounded-md outline-none border ring-offset-2 ring-indigo-600 focus:ring-2"
+                        aria-label="Close"
+                      >
+                        Cancel
+                      </button>
+                    </Dialog.Close>
+                  </div>
+                </div>
+              </Dialog.Content>
+            </Dialog.Portal>
+            </Dialog.Root>
+            }
+
+            <div className="!mt-12">
+              <button
+                  type="submit"
+                  className="w-full py-3 px-4 tracking-wider text-sm rounded-md text-white bg-gray-700 hover:bg-gray-800 focus:outline-none"
+              >
+                Create an account
+              </button>
+            </div>
+            <p className="text-gray-800 text-sm mt-6 text-center dark:text-white">
+              Already have an account?{" "}
+              <button
+                  onClick={handleClick}
+                  className="text-red-600 font-semibold hover:underline ml-1"
+              >
+                Login here
+              </button>
+            </p>
+          </form>
+        </div>
       </div>
-    </div>
   );
-};
+}
 
 export default SignUp;

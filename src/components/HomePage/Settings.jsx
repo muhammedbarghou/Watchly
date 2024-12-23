@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import PersonalInformations from './Settings/PersonalInformations';
 import Security from './Settings/Security';

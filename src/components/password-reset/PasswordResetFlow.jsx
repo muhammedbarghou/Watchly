@@ -6,7 +6,6 @@ import { CodeStep } from './steps/CodeStep.jsx';
 import { NewPasswordStep } from './steps/NewPasswordStep.jsx';
 import { SuccessStep } from './steps/SuccessStep.jsx';
 import logolight from '../../Imgs/Logo2.png';
-import logodark from '../../Imgs/logo.png';
 import {ThemeToggle} from '../theme/ThemeToggle';
 
 

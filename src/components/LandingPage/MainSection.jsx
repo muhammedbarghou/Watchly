@@ -14,6 +14,7 @@ function Mainsection() {
                     <p className="mt-8 text-base font-normal leading-7 text-gray-400 lg:max-w-md xl:pr-0 lg:pr-16">Experience a new way to watch videos with friends, no matter where they are. Our app lets you sync videos in real-time, so you can laugh, react, and enjoy your favorite content together.</p>
                     <div className="flex items-center justify-center mt-8 space-x-5 xl:mt-16 lg:justify-start">
                         <button
+                            type="button"
                             href="#"
                             title=""
                             className="

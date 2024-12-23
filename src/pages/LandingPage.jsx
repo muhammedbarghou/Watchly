@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Navbar from '../components/LandingPage/Navbar.jsx'
 import Mainsection from '../components/LandingPage/MainSection.jsx'
 import Features from '../components/LandingPage/Features.jsx'

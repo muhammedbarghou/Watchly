@@ -3,16 +3,17 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
-import {GoogleAuthProvider} from "firebase/auth";
+import { GoogleAuthProvider } from "firebase/auth";
 
+// Firebase configuration from environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyCWT4QLuB6YOZ3Xg5UDFGQ5b4KMJOEVUe0",
-  authDomain: "watchly-d16b7.firebaseapp.com",
-  projectId: "watchly-d16b7",
-  storageBucket: "watchly-d16b7.appspot.com",
-  messagingSenderId: "179645494978",
-  appId: "1:179645494978:web:5978f1e405fc0f31232d5b",
-  measurementId: "G-QFMX4DYKX5"
+  apiKey: process.env.REACT_APP_API_KEY,
+  authDomain: process.env.REACT_APP_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_APP_ID,
+  measurementId: process.env.REACT_APP_MEASUREMENT_ID,
 };
 
 // Initialize Firebase

@@ -15,8 +15,8 @@ export const ThemeToggle = ({ onThemeChange }) => {
   };
 
   return (
-    <div className="relative z-50 flex items-center">
-      <Sun size={20} className={`text-yellow-500 ${theme === 'light' ? '' : 'opacity-50'}`} />
+    <div className="relative z-50 flex items-center ">
+      <Sun size={20} className={`text-white ${theme === 'light' ? '' : 'opacity-50'}`} />
       <Switch
         checked={theme === 'dark'}
         onChange={handleThemeChange}

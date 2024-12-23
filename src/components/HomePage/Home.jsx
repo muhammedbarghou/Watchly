@@ -1,9 +1,7 @@
 import React from 'react';
 import { Carousel } from 'react-responsive-carousel';
 import "react-responsive-carousel/lib/styles/carousel.min.css";
-import Step1 from '../../../../../React/watchly-app/src/assets/Step1.png';
-import Step2 from '../../../../../React/watchly-app/src/assets/Step2.png';
-import Step3 from '../../../../../React/watchly-app/src/assets/Step3.png';
+
 
 function Home() {
 const friendsInRooms = [
@@ -25,14 +23,6 @@ return (
                 showStatus={false} 
                 showArrows={true} 
                 transitionTime={1000}>
-                <div>
-                <img src={Step2} alt="Slide 2" />
-                <p className="legend">Create a room</p>
-                </div>
-                <div>
-                <img src={Step3} alt="Slide 3" />
-                <p className="legend">Join room</p>
-                </div>
             </Carousel>
             </div>
         </section>

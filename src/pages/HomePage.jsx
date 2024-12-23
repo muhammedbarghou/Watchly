@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bolt, LogOut, House, CirclePlus, HousePlus } from 'lucide-react';
+import {  House, CirclePlus, HousePlus } from 'lucide-react';
 import  Sidebar  from '../components/layout/Sidebar';
 import { Header } from '../components/layout/Header';
 import { MainContent } from '../components/layout/MainContent';

@@ -7,6 +7,8 @@ import { ThemeToggle } from '../../theme/ThemeToggle';
 import Settings from '../../HomePage/Settings';
 import { auth } from '../../../firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { initializeApp } from 'firebase/app';
 import { useNavigate } from 'react-router-dom';
 
 const Friends = ({ isOpen, onClose }) => {
@@ -14,22 +16,22 @@ const Friends = ({ isOpen, onClose }) => {
     <AlertDialog.Root open={isOpen} onOpenChange={onClose}>
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="fixed inset-0 bg-black/50" />
-        <AlertDialog.Content className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-[90vw] max-w-md max-h-[85vh] overflow-y-auto focus:outline-none">
-          <AlertDialog.Title className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-            Friends List
-          </AlertDialog.Title>
-          <div className="space-y-4">
-            <p className="text-gray-700 dark:text-gray-300">Your friends will appear here</p>
-          </div>
-          <div className="mt-6 flex justify-end">
+        <AlertDialog.Content className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-1/3 h-1/2  overflow-y-auto focus:outline-none">
+          <div className="flex justify-between items-center m-5">
+            <AlertDialog.Title className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+              Friends List
+            </AlertDialog.Title>
             <AlertDialog.Cancel asChild>
               <button
-                className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                onClick={onClose}
+                  className="px-4 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  onClick={onClose}
               >
                 Close
               </button>
             </AlertDialog.Cancel>
+          </div>
+          <div className="max-w-2xl mx-auto px-4">
+            no friens
           </div>
         </AlertDialog.Content>
       </AlertDialog.Portal>
@@ -99,29 +101,48 @@ const UserProfileDropdown = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [user, setUser] = useState(null);
+  const [userData, setUserData] = useState(null); // Store Firestore user data
   const navigate = useNavigate();
+  const db = getFirestore();
 
   const animation = useSpring({
     opacity: isOpen ? 1 : 0,
-    transform: isOpen ? "scale(1)" : "scale(0.95)",
+    transform: isOpen ? 'scale(1)' : 'scale(0.95)',
     config: { tension: 200, friction: 20 },
   });
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser({
-          name: currentUser.displayName,
+          uid: currentUser.uid,
+          email: currentUser.email,
           photoURL: currentUser.photoURL,
-          email: currentUser.email
         });
+
+        try {
+          const userRef = doc(db, "users", currentUser.uid); 
+          const userDoc = await getDoc(userRef);
+
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUserData(userData);
+          } else {
+            console.warn("User document does not exist in Firestore.");
+            setUserData({ name: "Anonymous" });
+          }
+        } catch (error) {
+          console.error("Error fetching user data from Firestore:", error);
+          setUserData({ name: "Error fetching data" });
+        }
       } else {
         setUser(null);
+        setUserData(null);
       }
     });
 
-    return () => unsubscribe();
-  }, []);
+    return () => unsubscribe(); 
+  }, [db, auth]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -129,76 +150,86 @@ const UserProfileDropdown = () => {
   };
 
   if (!user) {
-    return <div class="animate-spin inline-block size-6 border-[3px] border-current border-t-transparent text-blue-600 rounded-full dark:text-blue-500" role="status" aria-label="loading">
-              <span class="sr-only">Loading...</span>
-            </div>;
+    return (
+        <div
+            className="animate-spin inline-block size-6 border-[3px] border-current border-t-transparent text-red-600 rounded-full dark:text-red-500"
+            role="status"
+            aria-label="loading"
+        >
+          <span className="sr-only">Loading...</span>
+        </div>
+    );
   }
 
   const menuItems = [
-    { 
-      icon: Users, 
+    {
+      icon: Users,
       label: 'Friends list',
-      onClick: () => setShowFriends(true)
+      onClick: () => setShowFriends(true),
     },
-    { 
-      icon: History, 
+    {
+      icon: History,
       label: 'Room history',
-      onClick: () => setShowHistory(true)
+      onClick: () => setShowHistory(true),
     },
-    { 
-      icon: Bolt, 
+    {
+      icon: Bolt,
       label: 'Settings',
-      onClick: () => setShowSettings(true)
+      onClick: () => setShowSettings(true),
     },
   ];
 
   return (
-    <div className="relative">
-      <DropdownMenu.Root onOpenChange={(open) => setIsOpen(open)}>
-        <DropdownMenu.Trigger asChild>
-          <button className="focus:outline-none">
-            <CircleUserRound className="w-8 h-8 text-gray-600 dark:text-gray-400" />
-          </button>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Portal>
-          <animated.div style={animation}>
-            <DropdownMenu.Content className="absolute right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 w-64 z-50 transform origin-top-right border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center mb-4">
-                <img
-                  src={user.photoURL}
-                  alt="User Avatar"
-                  className="rounded-full w-12 h-12 mr-3 border border-gray-300 dark:border-gray-600"
-                />
-                <div>
-                  <strong className="text-gray-900 dark:text-white">{user.name}</strong>
+      <div className="relative">
+        <DropdownMenu.Root onOpenChange={(open) => setIsOpen(open)}>
+          <DropdownMenu.Trigger asChild>
+            <button className="focus:outline-none">
+              <CircleUserRound className="w-8 h-8 text-gray-600 dark:text-gray-400" />
+            </button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <animated.div style={animation}>
+              <DropdownMenu.Content className="absolute right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 w-64 z-50 transform origin-top-right border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center mb-4">
+                  <img
+                      src={userData?.photoURL || user.photoURL || 'https://via.placeholder.com/150'}
+                      alt="User Avatar"
+                      className="rounded-full w-12 h-12 mr-3 border border-gray-300 dark:border-gray-600"
+                  />
+                  <div>
+                    <strong className="text-gray-900 dark:text-white">{userData?.name || 'User'}</strong>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">ID: #{userData?.userId || 'No ID available'}</p>
+                  </div>
                 </div>
-              </div>
-              {menuItems.map((item, index) => (
-                <DropdownMenu.Item
-                  key={index}
-                  className="flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                  onClick={item.onClick}
-                >
-                  <item.icon className="w-5 h-5 text-gray-600 dark:text-gray-400 mr-3" />
-                  <span className="text-gray-700 dark:text-gray-300">{item.label}</span>
+                {menuItems.map((item, index) => (
+                    <DropdownMenu.Item
+                        key={index}
+                        className="flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={item.onClick}
+                    >
+                      <item.icon className="w-5 h-5 text-gray-600 dark:text-gray-400 mr-3" />
+                      <span className="text-gray-700 dark:text-gray-300">{item.label}</span>
+                    </DropdownMenu.Item>
+                ))}
+                <DropdownMenu.Separator className="w-full h-px my-2 bg-gray-200 dark:bg-gray-700" />
+                <DropdownMenu.Item className="p-2">
+                  <ThemeToggle />
                 </DropdownMenu.Item>
-              ))}
-              <DropdownMenu.Separator className="w-full h-px my-2 bg-gray-200 dark:bg-gray-700" />
-              <DropdownMenu.Item className="p-2">
-                <ThemeToggle />
-              </DropdownMenu.Item>
-              <DropdownMenu.Item className="flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700" onClick={handleLogout}>
-                <LogOut className="w-5 h-5 text-gray-600 dark:text-gray-400 mr-3" />
-                <span className="text-gray-700 dark:text-gray-300">Logout</span>
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </animated.div>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
-      <Friends isOpen={showFriends} onClose={() => setShowFriends(false)} />
-      <RoomHistory isOpen={showHistory} onClose={() => setShowHistory(false)} />
-      <SettingsDialog isOpen={showSettings} onClose={() => setShowSettings(false)} />
-    </div>
+                <DropdownMenu.Item
+                    className="flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                    onClick={handleLogout}
+                >
+                  <LogOut className="w-5 h-5 text-gray-600 dark:text-gray-400 mr-3" />
+                  <span className="text-gray-700 dark:text-gray-300">Logout</span>
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </animated.div>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
+        <Friends isOpen={showFriends} onClose={() => setShowFriends(false)} />
+        <RoomHistory isOpen={showHistory} onClose={() => setShowHistory(false)} />
+        <SettingsDialog isOpen={showSettings} onClose={() => setShowSettings(false)} />
+      </div>
   );
 };
 
