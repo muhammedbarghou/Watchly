@@ -72,7 +72,7 @@ const SettingsDialog = ({ isOpen, onClose }) => {
     <AlertDialog.Root open={isOpen} onOpenChange={onClose}>
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="fixed inset-0 bg-black/50" />
-        <AlertDialog.Content className="w-2/3 h-2/3 fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] bg-white dark:bg-gray-900 rounded-lg shadow-lg overflow-y-auto focus:outline-none">
+        <AlertDialog.Content className="md:w-2/3 md:h-3/4 w-full h-full md:p-6 fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] bg-white dark:bg-gray-900 rounded-lg shadow-lg overflow-y-auto focus:outline-none transition-all duration-300 ease-in">
           <div className="flex justify-between items-center m-5">
             <AlertDialog.Title className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
             Settings
@@ -104,6 +104,7 @@ const UserProfileDropdown = () => {
   const [userData, setUserData] = useState(null); // Store Firestore user data
   const navigate = useNavigate();
   const db = getFirestore();
+  
 
   const animation = useSpring({
     opacity: isOpen ? 1 : 0,

@@ -1,15 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import PersonalInformations from './Settings/PersonalInformations';
 import Security from './Settings/Security';
 import Notifications from './Settings/Notifications';
 import Privacy from './Settings/Privacy';
+import { useSpring, animated } from "react-spring";
+
+
 
 function Settings() {
+
+
     return (
-        <div className="h-auto flex bg-gray-100 dark:bg-gray-950">
-            <Tabs.Root defaultValue="personal" className="flex h-full w-full">
-                <Tabs.List className="flex flex-col w-48 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">                    
+            <div className="bg-gray-100 dark:bg-gray-950 flex flex-col h-full md:flex-row">
+            <Tabs.Root defaultValue="personal" className="flex h-full w-full flex flex-col h-full md:flex-row">
+                <Tabs.List className="flex flex-col w-full md:w-48 border-b md:border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">                    
                     {[
                         { value: "personal", label: "Personal Info" },
                         { value: "security", label: "Security" },
@@ -40,7 +45,7 @@ function Settings() {
                     </Tabs.Content>
                 </div>
             </Tabs.Root>
-        </div>
+            </div>
     );
 }
 
