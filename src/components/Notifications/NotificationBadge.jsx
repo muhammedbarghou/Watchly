@@ -1,10 +1,6 @@
 import React from 'react';
 
-interface NotificationBadgeProps {
-  count: number;
-}
-
-const NotificationBadge: React.FC<NotificationBadgeProps> = ({ count }) => {
+const NotificationBadge = ({ count }) => {
   if (count === 0) return null;
 
   return (

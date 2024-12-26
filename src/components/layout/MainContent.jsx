@@ -3,7 +3,6 @@ import  Home  from '../HomePage/Home';
 import  CreateRoom  from '../HomePage/CreateRoom';
 import  JoinRoom  from '../HomePage/JoinRoom';
 import  Settings  from '../HomePage/Settings';
-import  Profile  from '../HomePage/Profile';
 
 export const MainContent = ({ activeComponent }) => {
   const components = {
@@ -11,7 +10,6 @@ export const MainContent = ({ activeComponent }) => {
     createRoom: CreateRoom,
     joinRoom: JoinRoom,
     settings: Settings,
-    profile: Profile,
   };
 
   const Component = components[activeComponent];

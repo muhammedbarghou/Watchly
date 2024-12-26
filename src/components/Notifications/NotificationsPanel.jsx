@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { Bell } from 'lucide-react';
-import NotificationItem from './NotificationItem.tsx';
-import NotificationBadge from './NotificationBadge.tsx';
+import NotificationItem from './NotificationItem';
+import NotificationBadge from './NotificationBadge';
 import { useNotifications } from '../../hooks/useNotifications.ts';
 
-const NotificationsPanel: React.FC = () => {
+const NotificationsPanel = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { notifications, markAsRead, handleAccept, handleReject } = useNotifications();
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  const handleNotificationClick = (id: number) => {
+  const handleNotificationClick = (id) => {
     markAsRead(id);
   };
 

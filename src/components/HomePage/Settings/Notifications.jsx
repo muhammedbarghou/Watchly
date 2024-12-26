@@ -38,7 +38,7 @@ function Notifications() {
                 {/* Push Notifications */}
                 <div className="flex items-center justify-between border-b pb-4">
                     <label htmlFor="pushNotifications" className="text-lg font-medium">
-                        Push Notifications
+                        Room Notifications
                     </label>
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input

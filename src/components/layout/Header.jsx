@@ -1,7 +1,7 @@
 import React from "react";
 import { X, PanelRightOpen,Search  } from "lucide-react";
-import NotificationsPanel from "../Notifications/NotificationsPanel.tsx";
-import UserProfileDropdown from "../HomePage/Home/Userprofiledropdown.jsx";
+import NotificationsPanel from "../Notifications/NotificationsPanel";
+import UserProfileDropdown from "../HomePage/Home/Userprofiledropdown";
 
 export const Header = ({
   isOpen,

@@ -9,12 +9,16 @@ import ResetPassword from './pages/Reset-password';
 import { Theme } from '@radix-ui/themes';
 import '@radix-ui/themes/styles.css';
 import SignMethode from './pages/SignMethode';
+import { ThemeProvider } from './components/theme/ThemeContextProvider'; // Import ThemeProvider
+
 
 function App() {
   return (
     <Theme>
       <Router>
-        <AppContent />
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
       </Router>
     </Theme>
   );

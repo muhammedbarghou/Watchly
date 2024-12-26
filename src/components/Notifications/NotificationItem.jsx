@@ -1,20 +1,8 @@
 import React from 'react';
-import NotificationIcon, { NotificationType } from './NotificationIcon.tsx';
+import NotificationIcon from './NotificationIcon';
 import { Check, X } from 'lucide-react';
 
-interface NotificationItemProps {
-  id: number;
-  type: NotificationType;
-  content: string;
-  timestamp: string;
-  isRead: boolean;
-  userImage: string;
-  onClick?: () => void;
-  onAccept?: () => void;
-  onReject?: () => void;
-}
-
-const NotificationItem: React.FC<NotificationItemProps> = ({
+const NotificationItem = ({
   type,
   content,
   timestamp,

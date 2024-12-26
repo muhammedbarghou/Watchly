@@ -66,7 +66,7 @@ function SignUp() {
   };
 
   return (
-      <div className="font-[sans-serif] bg-white max-w-4xl flex items-center mx-auto md:h-screen p-4 dark:bg-transparent">
+      <div className="font-[sans-serif] max-w-4xl flex items-center mx-auto md:h-screen p-4 dark:bg-transparent">
         <div className="grid md:grid-cols-3 items-center shadow-[0_2px_10px_-3px_rgba(6,81,237,0.3)] rounded-xl overflow-hidden">
           <aside className="max-md:order-1 flex flex-col justify-center space-y-16 max-md:mt-16 min-h-full bg-gradient-to-r from-[#6a040f] to-[#d00000] lg:px-8 px-4 py-4">
             <div>
@@ -118,7 +118,7 @@ function SignUp() {
 
               <div>
                 <label className="text-gray-800 text-sm mb-2 block dark:text-white">
-                  Email Id
+                  Email
                 </label>
                 <div className="relative flex items-center">
                   <input
