@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import bg from '../../Imgs/bg-2.jpg';
-import {Link} from 'react-router-dom';
 const CreateRoom = () => {
   const [roomId, setRoomId] = useState('');
   const [roomName, setRoomName] = useState('');

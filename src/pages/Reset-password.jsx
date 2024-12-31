@@ -25,7 +25,7 @@ const handleResetPassword = async () => {
 
   return (
     <div className="w-full h-screen flex flex-col justify-center items-center bg-gray-300 dark:bg-gray-950">
-        <main className='w-1/3 h-auto flex flex-col bg-gray-200 p-8 rounded-lg shadow-lg dark:bg-gray-900'>
+        <main className='w-auto h-auto flex flex-col bg-gray-200 p-8 rounded-lg shadow-lg dark:bg-gray-900'>
                 <div className='flex justify-between items-center pb-4'>
                     <h1 className='text-2xl font-bold'>Reset Password</h1>
                     <ThemeToggle />

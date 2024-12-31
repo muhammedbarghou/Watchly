@@ -8,22 +8,9 @@ import { MainContent } from '../components/layout/MainContent';
 const HomePage = () => {
   const [activeComponent, setActiveComponent] = useState('home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [currentTheme, setCurrentTheme] = useState(() => 
-    localStorage.getItem('theme') || 'light'
-  );
 
-  const navigate = useNavigate();
 
-  const convertStringToTheme = (theme) => {
-    switch (theme) {
-      case 'light':
-        return 'light';
-      case 'dark':
-        return 'dark';
-      default:
-        return 'light';
-    }
-  };
+
 
 
 
@@ -51,7 +38,6 @@ const HomePage = () => {
     <section className="flex flex-col h-screen w-screen relative overflow-hidden">
       <Sidebar
         isOpen={isSidebarOpen}
-        currentTheme={currentTheme}
         navigation={navigation}
       />
       

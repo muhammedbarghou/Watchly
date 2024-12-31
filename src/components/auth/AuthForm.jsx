@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../../firebase';
-import { Facebook, Mail } from 'lucide-react';
-import { SocialButton } from './SocialButton';
+import { Mail } from 'lucide-react';
 import { ThemeToggle } from '../theme/ThemeToggle';
 
 export const AuthForm = () => {
@@ -113,6 +112,7 @@ export const AuthForm = () => {
                   type="checkbox"
                   checked={stayLoggedIn}
                   onChange={() => setStayLoggedIn(!stayLoggedIn)}
+                  className={"rounded transition ease-in duration-200 bg-red-800 w-5 h-5"}
                 />
                 <span className="ml-2 text-gray-900 dark:text-white">Stay Logged In</span>
               </div>
@@ -140,13 +140,6 @@ export const AuthForm = () => {
             </div>
             <span>Continue with Google</span>
           </button>
-
-          <SocialButton provider="facebook">
-            <div className="absolute inset-y-0 left-0 p-4">
-              <Facebook className="w-6 h-6 text-[#2563EB]" />
-            </div>
-            Sign in with Facebook
-          </SocialButton>
 
           <ThemeToggle />
         </div>
