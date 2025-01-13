@@ -19,7 +19,6 @@ export function NotificationDropdown() {
       },
       isRead: false
     }
-    // ... add more notifications as needed
   ];
 
   return (
@@ -35,7 +34,7 @@ export function NotificationDropdown() {
       </button>
       
       <DropdownMenu isOpen={isOpen} onClose={() => setIsOpen(false)} className="w-80">
-        <div className="px-4 py-2 border-b border-netflix-gray">
+        <div className="px-4 py-2">
           <h3 className="font-semibold text-white">Notifications</h3>
         </div>
         <div className="max-h-[400px] overflow-y-auto">
@@ -45,7 +44,7 @@ export function NotificationDropdown() {
               title={item.title}
               message={item.message}
               time={item.time}
-              type={item.type}
+              type={item.type as "invite" | "friend"}
               user={item.user}
               isRead={item.isRead}
             />

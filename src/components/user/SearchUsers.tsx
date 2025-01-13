@@ -3,11 +3,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from '../ui/button';
 
 interface User {
   profilePicture: string;
   fullName: string;
   id: string;
+  isFriend: boolean;
 }
 
 const SearchComponent = () => {
@@ -16,18 +18,38 @@ const SearchComponent = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Mock user data
   const users: User[] = [
     {
       profilePicture: 'https://example.com/pic1.jpg',
       fullName: 'Alice Smith',
-      id: '#123456'
+      id: '#123456',
+      isFriend : true
     },
     {
       profilePicture: 'https://example.com/pic2.jpg',
       fullName: 'Bob Johnson',
-      id: '#234567'
+      id: '#234567',
+      isFriend : false
     },
+    {
+      profilePicture: 'https://example.com/pic3.jpg',
+      fullName: 'Charlie Brown',
+      id: '#345678',
+      isFriend : false
+    },
+    {
+      profilePicture: 'https://example.com/pic4.jpg',
+      fullName: 'David Lee',
+      id: '#456789',
+      isFriend : true
+    },
+    {
+      profilePicture: 'https://example.com/pic5.jpg',
+      fullName: 'Eve Wilson',
+      id: '#567890',
+      isFriend : false
+    },
+    
   ];
 
   useEffect(() => {
@@ -95,6 +117,13 @@ const SearchComponent = () => {
                         <span className="text-sm text-gray-400">
                           {user.id}
                         </span>
+                      </div>
+                      <div className="ml-auto">
+                      {user.isFriend ? (
+                        <span className="text-gray-400 text-sm">Friends</span>
+                      ) : (
+                        <Button className="text-gray-400 text-sm">Add friend</Button>
+                      )}
                       </div>
                     </div>
                   ))

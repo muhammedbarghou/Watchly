@@ -14,7 +14,6 @@ interface NotificationItemProps {
 }
 
 export function NotificationItem({ 
-  title, 
   message, 
   time, 
   type, 
@@ -24,7 +23,7 @@ export function NotificationItem({
   const Icon = type === 'invite' ? Video : UserPlus;
 
   return (
-    <div className={`px-4 py-3 hover:bg-gray-900/50 cursor-pointer transition-colors ${
+    <div className={`px-4 py-3 hover:bg-gray-950 cursor-pointer transition-colors ${
       !isRead ? 'bg-gray-900/30' : ''
     }`}>
       <div className="flex items-start gap-3">
@@ -36,7 +35,7 @@ export function NotificationItem({
             </AvatarFallback>
           </Avatar>
           <div className="absolute bottom-0 right-0 rounded-full bg-gray-900 p-1">
-            <Icon className="w-4 h-4 text-blue-500" />
+            <Icon className="w-4 h-4 text-netflix-red" />
           </div>
         </div>
         
@@ -50,7 +49,7 @@ export function NotificationItem({
               <p className="text-xs text-gray-500 mt-1">{time}</p>
             </div>
             {!isRead && (
-              <div className="w-2 h-2 rounded-full bg-blue-600 mt-1 flex-shrink-0" />
+              <div className="w-2 h-2 rounded-full bg-netflix-red mt-1 flex-shrink-0" />
             )}
           </div>
         </div>
