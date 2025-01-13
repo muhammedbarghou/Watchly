@@ -1,18 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-const SearchComponent: React.FC = () => {
-  const [query, setQuery] = useState<string>('');
+interface User {
+  profilePicture: string;
+  fullName: string;
+  id: string;
+}
+
+const SearchComponent = () => {
+  const [query, setQuery] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [showDropdown, setShowDropdown] = useState<boolean>(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Mock list of users with profile picture, full name, and ID
-  interface User {
-    profilePicture: string;
-    fullName: string;
-    id: string;
-  }
-
+  // Mock user data
   const users: User[] = [
     {
       profilePicture: 'https://example.com/pic1.jpg',
@@ -24,7 +28,6 @@ const SearchComponent: React.FC = () => {
       fullName: 'Bob Johnson',
       id: '#234567'
     },
-    // Add more users as needed
   ];
 
   useEffect(() => {
@@ -57,44 +60,52 @@ const SearchComponent: React.FC = () => {
   };
 
   return (
-    <div className="relative inline-block z-50">
-      <input
+    <div className="relative w-64">
+      <Input
         type="text"
         placeholder="Search users..."
         value={query}
         onChange={handleInputChange}
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
-        className="w-64 px-4 py-2 border rounded-md focus:outline-none focus:border-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+        className="w-full bg-gray-950 border-gray-800 text-gray-200 placeholder:text-gray-500 focus-visible:ring-gray-700"
       />
       {showDropdown && (
-        <div
-          ref={dropdownRef}
-          className="absolute z-50 w-64 mt-1 bg-white border rounded-md shadow-md overflow-y-auto max-h-60 dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:shadow-lg"
-        >
-          {filteredUsers.length > 0 ? (
-            filteredUsers.map((user) => (
-              <div
-                key={user.id}
-                className="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer dark:hover:bg-gray-700 dark:text-white"
-              >
-                <img
-                  src={user.profilePicture}
-                  alt={`${user.fullName} profile picture`}
-                  className="w-10 h-10 rounded-full object-cover mr-2"
-                  onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/40')}
-                />
-                <div>
-                  <p className="font-bold">{user.fullName}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{user.id}</p>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="px-4 py-2 text-gray-500 dark:text-gray-400">
-              No results found
-            </div>
-          )}
+        <div ref={dropdownRef} className="absolute w-full z-50 mt-1">
+          <Card className="border-gray-800 bg-gray-950">
+            <ScrollArea className="h-60">
+              <CardContent className="p-0">
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center gap-2 p-3 cursor-pointer hover:bg-gray-900 transition-colors border-b border-gray-800 last:border-b-0"
+                    >
+                      <Avatar>
+                        <AvatarImage
+                          src={user.profilePicture}
+                          alt={`${user.fullName} profile picture`}
+                        />
+                        <AvatarFallback className="bg-gray-800 text-gray-200">
+                          {user.fullName.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-200">{user.fullName}</span>
+                        <span className="text-sm text-gray-400">
+                          {user.id}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-3 text-sm text-gray-400">
+                    No results found
+                  </div>
+                )}
+              </CardContent>
+            </ScrollArea>
+          </Card>
         </div>
       )}
     </div>

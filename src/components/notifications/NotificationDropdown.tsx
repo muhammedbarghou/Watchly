@@ -5,22 +5,21 @@ import { NotificationItem } from './NotificationItem';
 
 export function NotificationDropdown() {
   const [isOpen, setIsOpen] = React.useState(false);
-
+  
+  // Sample notifications array
   const notifications = [
     {
-      id: 1,
-      title: 'New room invitation',
-      message: 'John invited you to watch "Movie Night"',
-      time: '5m ago',
-      type: 'invite'
-    },
-    {
-      id: 2,
-      title: 'Friend request',
-      message: 'Sarah sent you a friend request',
-      time: '1h ago',
-      type: 'friend'
+      title: "Watch Party Invitation",
+      message: "invited you to watch 'The Matrix'",
+      time: "5m ago",
+      type: "invite",
+      user: {
+        name: "John Smith",
+        image: "https://example.com/john.jpg"
+      },
+      isRead: false
     }
+    // ... add more notifications as needed
   ];
 
   return (
@@ -40,8 +39,16 @@ export function NotificationDropdown() {
           <h3 className="font-semibold text-white">Notifications</h3>
         </div>
         <div className="max-h-[400px] overflow-y-auto">
-          {notifications.map((notification) => (
-            <NotificationItem key={notification.id} {...notification} />
+          {notifications.map((item) => (
+            <NotificationItem 
+              key={item.title}
+              title={item.title}
+              message={item.message}
+              time={item.time}
+              type={item.type}
+              user={item.user}
+              isRead={item.isRead}
+            />
           ))}
         </div>
       </DropdownMenu>

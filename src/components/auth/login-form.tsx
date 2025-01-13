@@ -70,7 +70,7 @@ export function LoginForm({
       <div className="grid gap-6">
         <div className="grid gap-2">
           <Label htmlFor="email" className="text-white">Email</Label>
-          <Input id="email" type="email" placeholder="m@example.com" {...register('email')} />
+          <Input id="email" type="email" placeholder="example@example.com" {...register('email')} />
           {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
         </div>
         <div className="grid gap-2">
@@ -83,7 +83,7 @@ export function LoginForm({
               Forgot your password?
             </a>
           </div>
-          <Input id="password" type="password" {...register('password')} />
+          <Input id="password" type="password" placeholder="Password" {...register('password')} />
           {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
         </div>
         <Button type="submit" className="w-full">
