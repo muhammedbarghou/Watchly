@@ -1,7 +1,6 @@
 import React from 'react';
 import { MainLayout } from '../components/layout/MainLayout';
 import { SettingsLayout } from '../components/settings/SettingsLayout';
-import { AppearanceSettings } from '../components/settings/sections/AppearanceSettings';
 import { AccountSettings } from '../components/settings/sections/AccountSettings';
 import { NotificationSettings } from '../components/settings/sections/NotificationSettings';
 import { PrivacySettings } from '../components/settings/sections/PrivacySettings';
@@ -10,7 +9,6 @@ import { LegalAboutSettings } from '../components/settings/sections/LegalAboutSe
 
 const TABS = [
   { label: 'Account', value: 'account' },
-  { label: 'Appearance', value: 'appearance' },
   { label: 'Notifications', value: 'notifications' },
   { label: 'Privacy & Security', value: 'privacy' },
   { label: 'Help & Support', value: 'help' },
@@ -22,8 +20,7 @@ export function SettingsPage() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'appearance':
-        return <AppearanceSettings />;
+
       case 'account':
         return <AccountSettings />;
       case 'notifications':

@@ -14,8 +14,6 @@ interface SettingsLayoutProps {
 export function SettingsLayout({ children, tabs, activeTab, onTabChange }: SettingsLayoutProps) {
   return (
     <div className="max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Settings</h1>
-      
       <div className="flex gap-6">
         <div className="w-48 shrink-0">
           <nav className="flex flex-col gap-1">
@@ -35,8 +33,7 @@ export function SettingsLayout({ children, tabs, activeTab, onTabChange }: Setti
             ))}
           </nav>
         </div>
-        
-        <div className="flex-1 min-h-[600px] bg-netflix-gray/50 rounded-lg p-6">
+        <div className="flex-1 min-h-auto bg-netflix-gray/50 rounded-lg p-6">
           {children}
         </div>
       </div>

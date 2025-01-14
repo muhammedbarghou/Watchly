@@ -4,6 +4,8 @@ import { UserDropdown } from '../user/UserDropdown';
 import { Button } from '../ui/button';
 import Logo from "@/assets/logo.png";
 import SearchComponent from '../user/SearchUsers';
+import { ThemeToggle } from '../ui/theme-toggle';
+
 
 export function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
   return (
@@ -22,6 +24,7 @@ export function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
         </div>
         <div className="flex items-center gap-4">
           <SearchComponent />
+          <ThemeToggle />
           <NotificationDropdown />
           <UserDropdown />
         </div>

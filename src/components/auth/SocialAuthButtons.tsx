@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 interface SocialAuthButtonsProps {
   onGoogleClick: () => Promise<void>;
   onFacebookClick: () => Promise<void>;
+  disabled: boolean;
 }
 
 export function SocialAuthButtons({ onGoogleClick, onFacebookClick }: SocialAuthButtonsProps) {

@@ -1,19 +1,47 @@
-import React from 'react';
-import { User, Lock, Shield, Trash2 } from 'lucide-react';
 import { Button } from '../../ui/button';
-import { Switch } from '../../ui/switch';
+import { User as FirebaseUser } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useEffect, useState } from 'react';
+
 
 export function AccountSettings() {
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="w-8 h-8 rounded-lg bg-netflix-gray flex items-center justify-center">
+        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const handleInformationsChange = () => {
+    // Handle password change
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <div>
         <h3 className="text-lg font-semibold mb-4">Profile Information</h3>
         <div className="space-y-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 ">
             <div className="w-20 h-20 rounded-full bg-netflix-gray flex items-center justify-center">
-              <User className="w-8 h-8" />
+              {user && <img src={user.photoURL ?? ''} alt="" className='rounded-full'/>}
             </div>
-            <Button>Change Avatar</Button>
+            <div className="flex flex-col gap-2">
+              <p className='text-xl'>{user?.displayName || 'User'}</p>
+              <p className='text-xs text-gray-400'>{user?.email || ''}</p>
+            </div>
           </div>
           
           <div className="space-y-4">
@@ -31,41 +59,38 @@ export function AccountSettings() {
                 className="w-full p-2 rounded-lg bg-netflix-gray border border-netflix-gray"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Bio</label>
-              <textarea
-                className="w-full p-2 rounded-lg bg-netflix-gray border border-netflix-gray"
-                rows={3}
-              />
-            </div>
           </div>
         </div>
       </div>
-
       <div>
-        <h3 className="text-lg font-semibold mb-4">Security</h3>
+        <h3 className="text-lg font-semibold mb-4">Password</h3>
         <div className="space-y-4">
-          <Button variant="secondary" className="w-full justify-start">
-            <Lock className="w-4 h-4 mr-2" />
-            Change Password
-          </Button>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Two-Factor Authentication</p>
-              <p className="text-sm text-gray-400">Add an extra layer of security</p>
-            </div>
-            <Switch />
+          <div>
+            <label className="block text-sm font-medium mb-1">Current Password</label>
+            <input
+              type="password"
+              className="w-full p-2 rounded-lg bg-netflix-gray border border-netflix-gray"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">New Password</label>
+            <input
+              type="password"
+              className="w-full p-2 rounded-lg bg-netflix-gray border border-netflix-gray"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Confirm Password</label>
+            <input
+              type="password"
+              className="w-full p-2 rounded-lg bg-netflix-gray border border-netflix-gray"
+            />
           </div>
         </div>
       </div>
-
-      <div>
-        <h3 className="text-lg font-semibold mb-4 text-red-500">Danger Zone</h3>
-        <Button variant="destructive" className="w-full justify-start">
-          <Trash2 className="w-4 h-4 mr-2" />
-          Delete Account
-        </Button>
-      </div>
+      <footer>
+        <Button onClick={handleInformationsChange}>Save Changes</Button>
+      </footer>
     </div>
   );
 }
