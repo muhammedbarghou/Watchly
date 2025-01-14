@@ -21,7 +21,7 @@ type SignupFormData = z.infer<typeof signupSchema>;
 
 export function SignForm() {
   const navigate = useNavigate();
-  const { signUp,userProfile, signInWithGoogle, signInWithFacebook } = useAuth();
+  const { signUp,signInWithGoogle, signInWithFacebook } = useAuth();
   const [error, setError] = useState<string>('');
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema)

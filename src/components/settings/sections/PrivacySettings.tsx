@@ -1,5 +1,4 @@
-import React from 'react';
-import { Eye, Lock, Shield, LogOut, Laptop } from 'lucide-react';
+import { LogOut, Laptop } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Switch } from '../../ui/switch';
 
@@ -39,31 +38,12 @@ export function PrivacySettings() {
         </div>
       </div>
 
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Data & Privacy</h3>
-        <div className="space-y-4">
-          {[
-            { label: 'Usage Analytics', desc: 'Help improve Watchly with usage data' },
-            { label: 'Personalization', desc: 'Allow personalized recommendations' }
-          ].map((item) => (
-            <div key={item.label} className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">{item.label}</p>
-                <p className="text-sm text-gray-400">{item.desc}</p>
-              </div>
-              <Switch />
-            </div>
-          ))}
-        </div>
-      </div>
 
       <div>
         <h3 className="text-lg font-semibold mb-4">Active Sessions</h3>
         <div className="space-y-4">
           {[
             { device: 'Current Browser', location: 'New York, US', time: 'Now' },
-            { device: 'iPhone 12', location: 'Boston, US', time: '2 hours ago' },
-            { device: 'MacBook Pro', location: 'San Francisco, US', time: '1 day ago' }
           ].map((session, index) => (
             <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-netflix-gray/50">
               <div className="flex items-center gap-3">

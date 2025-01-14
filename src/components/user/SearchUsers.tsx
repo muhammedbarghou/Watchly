@@ -90,31 +90,31 @@ const SearchComponent = () => {
         onChange={handleInputChange}
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
-        className="w-full bg-gray-950 border-gray-800 text-gray-200 placeholder:text-gray-500 focus-visible:ring-gray-700"
+        className="w-full dark:bg-gray-950 dark:border-gray-800 text-black dark:text-gray-200 dark:placeholder:text-gray-500 focus-visible:ring-gray-700"
       />
       {showDropdown && (
         <div ref={dropdownRef} className="absolute w-full z-50 mt-1">
-          <Card className="border-gray-800 bg-gray-950">
+          <Card className="border-gray-800 dark:bg-gray-950">
             <ScrollArea className="h-60">
               <CardContent className="p-0">
                 {filteredUsers.length > 0 ? (
                   filteredUsers.map((user) => (
                     <div
                       key={user.id}
-                      className="flex items-center gap-2 p-3 cursor-pointer hover:bg-gray-900 transition-colors border-b border-gray-800 last:border-b-0"
+                      className="flex items-center gap-2 p-3 cursor-pointer dark:hover:bg-gray-900 transition-colors border-b dark:border-gray-800 last:border-b-0"
                     >
                       <Avatar>
                         <AvatarImage
                           src={user.profilePicture}
                           alt={`${user.fullName} profile picture`}
                         />
-                        <AvatarFallback className="bg-gray-800 text-gray-200">
+                        <AvatarFallback className="dark:bg-gray-800 dar:text-gray-200">
                           {user.fullName.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col">
-                        <span className="font-medium text-gray-200">{user.fullName}</span>
-                        <span className="text-sm text-gray-400">
+                        <span className="font-medium dark:text-gray-200">{user.fullName}</span>
+                        <span className="text-sm dark:text-gray-400">
                           {user.id}
                         </span>
                       </div>

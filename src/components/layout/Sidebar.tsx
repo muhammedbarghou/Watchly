@@ -14,7 +14,7 @@ export function Sidebar({ isOpen }: { isOpen: boolean }) {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-netflix-black border-r border-netflix-gray transition-transform duration-200 ease-in-out',
+        'fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 dark:bg-netflix-black bg-gray-100 transition-transform duration-200 ease-in-out',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >
@@ -28,7 +28,7 @@ export function Sidebar({ isOpen }: { isOpen: boolean }) {
                   'flex items-center gap-3 px-4 py-2 rounded-lg transition-colors',
                   location.pathname === to
                     ? 'bg-netflix-red text-white'
-                    : 'text-gray-400 hover:bg-netflix-gray hover:text-white'
+                    : 'dark:text-gray-400 dark:hover:bg-netflix-gray dark:hover:text-white hover:bg-gray-200'
                 )}
               >
                 <Icon className="w-5 h-5" />

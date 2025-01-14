@@ -1,13 +1,7 @@
-import React from 'react';
-import { ExternalLink, Info, Book, Code } from 'lucide-react';
+import { Cookie,Shield, Book,} from 'lucide-react';
 import { Button } from '../../ui/button';
 
-const dependencies = [
-  { name: 'React', version: '18.3.1' },
-  { name: 'Firebase', version: '10.8.0' },
-  { name: 'Lucide Icons', version: '0.344.0' },
-  { name: 'Tailwind CSS', version: '3.4.1' }
-];
+
 
 export function LegalAboutSettings() {
   return (
@@ -48,29 +42,6 @@ export function LegalAboutSettings() {
         </div>
       </div>
 
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Attributions</h3>
-        <div className="space-y-4">
-          <div className="rounded-lg border border-netflix-gray overflow-hidden">
-            <div className="p-3 bg-netflix-gray/50 border-b border-netflix-gray">
-              <h4 className="font-medium">Dependencies</h4>
-            </div>
-            <div className="divide-y divide-netflix-gray">
-              {dependencies.map((dep) => (
-                <div key={dep.name} className="flex items-center justify-between p-3">
-                  <span>{dep.name}</span>
-                  <span className="text-sm text-gray-400">v{dep.version}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <Button variant="secondary" className="w-full">
-            <Code className="w-4 h-4 mr-2" />
-            View All Dependencies
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

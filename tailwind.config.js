@@ -15,7 +15,7 @@ export default {
   	extend: {
   		colors: {
   			netflix: {
-  				red: '#E50914',
+  				red: '#D00000',
   				black: '#141414',
   				gray: '#262626',
   				hover: '#1F1F1F'

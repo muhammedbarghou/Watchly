@@ -27,7 +27,7 @@ export function FriendsList() {
               <User className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="font-medium text-white">{friend.name}</h3>
+              <h3 className="font-medium text-dark dark:textè-white">{friend.name}</h3>
               <p className="text-sm text-gray-400">
                 {friend.status === 'in-room' ? `Watching in ${friend.roomId}` : friend.status}
               </p>
