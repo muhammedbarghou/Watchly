@@ -14,7 +14,8 @@ import {
   updateDoc,
   arrayUnion,
   getDoc,
-  getFirestore
+  getFirestore,
+  Timestamp
 } from 'firebase/firestore';
 
 interface User {
@@ -31,26 +32,29 @@ const SearchComponent = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
   const [friendsList, setFriendsList] = useState<string[]>([]);
+  const [sendingRequest, setSendingRequest] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser } = useAuth();
   const db = getFirestore();
 
-  
   useEffect(() => {
     const fetchFriendsList = async () => {
-      if (currentUser) {
+      if (!currentUser?.uid) return;
+      
+      try {
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
           setFriendsList(userDoc.data().friends || []);
         }
+      } catch (error) {
+        console.error('Error fetching friends list:', error);
       }
     };
 
     fetchFriendsList();
   }, [currentUser]);
 
-  // Search users
   useEffect(() => {
     const searchUsers = async () => {
       if (searchQuery.length < 1) {
@@ -68,7 +72,6 @@ const SearchComponent = () => {
         const users: User[] = [];
         
         querySnapshot.forEach((doc) => {
-          // Don't include current user in results
           if (doc.id !== currentUser?.uid) {
             users.push({
               uid: doc.id,
@@ -90,20 +93,44 @@ const SearchComponent = () => {
   }, [searchQuery, currentUser]);
 
   const handleAddFriend = async (targetUser: User) => {
-    if (!currentUser) return;
+    if (!currentUser?.uid) {
+      alert('You must be logged in to send friend requests');
+      return;
+    }
 
+    setSendingRequest(true);
     try {
-      // Add to current user's friend requests
-      const userRef = doc(db, 'users', targetUser.uid);
-      await updateDoc(userRef, {
-        friendRequests: arrayUnion(currentUser.uid)
+      // Update target user's document with the friend request
+      const targetUserRef = doc(db, 'users', targetUser.uid);
+      const targetUserDoc = await getDoc(targetUserRef);
+      
+      if (!targetUserDoc.exists()) {
+        throw new Error('Target user not found');
+      }
+
+      // Check if request already exists
+      const existingRequests = targetUserDoc.data().friendRequests || [];
+      if (existingRequests.some((request: { uid: string; }) => request.uid === currentUser.uid)) {
+        alert('Friend request already sent');
+        setSendingRequest(false);
+        return;
+      }
+
+      // Create friend request with current timestamp
+      await updateDoc(targetUserRef, {
+        friendRequests: arrayUnion({
+          uid: currentUser.uid,
+          timestamp: Timestamp.now(),
+          status: 'pending'
+        })
       });
 
-      // Optional: Show some feedback
-      alert('Friend request sent!');
+      alert('Friend request sent successfully!');
     } catch (error) {
       console.error('Error sending friend request:', error);
-      alert('Failed to send friend request');
+      alert('Failed to send friend request. Please try again.');
+    } finally {
+      setSendingRequest(false);
     }
   };
 
@@ -172,8 +199,9 @@ const SearchComponent = () => {
                             variant="secondary"
                             className="text-sm"
                             onClick={() => handleAddFriend(user)}
+                            disabled={sendingRequest}
                           >
-                            Add friend
+                            {sendingRequest ? 'Sending...' : 'Add friend'}
                           </Button>
                         )}
                       </div>
