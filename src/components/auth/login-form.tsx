@@ -46,6 +46,7 @@ export function LoginForm({
       navigate('/friends')
     } catch (error) {
       console.error('Google sign in error:', error)
+      alert('Failed to sign in with Google. Please try again later.')
     }
   }
 

@@ -1,5 +1,6 @@
 import { UserPlus, Video } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 interface NotificationItemProps {
   title: string;
@@ -11,6 +12,8 @@ interface NotificationItemProps {
     image: string;
   };
   isRead: boolean;
+  onAccept?: () => void;
+  onDecline?: () => void;
 }
 
 export function NotificationItem({ 
@@ -18,7 +21,9 @@ export function NotificationItem({
   time, 
   type, 
   user,
-  isRead 
+  isRead,
+  onAccept,
+  onDecline
 }: NotificationItemProps) {
   const Icon = type === 'invite' ? Video : UserPlus;
 
@@ -35,7 +40,9 @@ export function NotificationItem({
             </AvatarFallback>
           </Avatar>
           <div className="absolute bottom-0 right-0 rounded-full bg-gray-900 p-1">
-            <Icon className="w-4 h-4 text-netflix-red" />
+            <Icon className={`w-4 h-4 ${
+              type === 'invite' ? 'text-netflix-red' : 'text-red-500'
+            }`} />
           </div>
         </div>
         
@@ -52,6 +59,32 @@ export function NotificationItem({
               <div className="w-2 h-2 rounded-full bg-netflix-red mt-1 flex-shrink-0" />
             )}
           </div>
+
+          {/* Actions for friend requests */}
+          {type === 'friend' && (
+            <div className="flex gap-2 mt-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent triggering the parent onClick
+                  onAccept?.();
+                }}
+              >
+                Accept
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent triggering the parent onClick
+                  onDecline?.();
+                }}
+              >
+                Decline
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

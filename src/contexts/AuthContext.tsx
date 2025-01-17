@@ -16,7 +16,8 @@ import {
   getDoc, 
   getFirestore, 
   collection,
-  serverTimestamp
+  serverTimestamp,
+  Timestamp
 } from 'firebase/firestore';
 import { auth } from '../lib/firebase';
 
@@ -106,55 +107,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const createUserDocument = async (
-    user: User, 
-    customUID: string, 
-    provider: string,
-    fullName?: string
-  ) => {
-    try {
-      const userRef = doc(db, 'users', user.uid);
-      const timestamp = serverTimestamp();
-      
-      const userData: UserProfile = {
-        uid: user.uid,
-        customUID,
-        email: user.email,
-        displayName: fullName || user.displayName,
-        photoURL: user.photoURL,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        provider,
-        isOnline: true,
-        friends: [],
-        friendRequests: [],
-        blockedUsers: []
-      };
-
-      // Store user profile
-      await setDoc(userRef, userData);
-
-      // Store UID reference
-      const uidRef = doc(db, 'uids', customUID);
-      await setDoc(uidRef, {
-        userId: user.uid,
-        createdAt: timestamp
-      });
-
-      // Store in search index
-      const searchRef = doc(collection(db, 'userSearch'), user.uid);
-      await setDoc(searchRef, {
-        customUID,
-        displayName: fullName || user.displayName,
-        email: user.email,
-        searchTerms: generateSearchTerms(fullName || user.displayName || '')
-      });
-
-      return userData;
-    } catch (error) {
-      console.error('Error creating user document:', error);
-      throw new Error('Failed to create user document');
-    }
+  const createUserDocument = async (user: User, customUID: string, provider: string, fullName?: string) => {
+    const userProfile: UserProfile = {
+      uid: user.uid,
+      customUID,
+      email: user.email,
+      displayName: fullName || user.displayName,
+      photoURL: user.photoURL,
+      createdAt: serverTimestamp() as Timestamp,
+      updatedAt: serverTimestamp() as Timestamp,
+      provider,
+      isOnline: true,
+      friends: [],
+      friendRequests: [],
+      blockedUsers: []
+    };
+    await setDoc(doc(db, 'users', user.uid), userProfile);
+    return userProfile;
   };
 
   // Helper function to generate search terms
