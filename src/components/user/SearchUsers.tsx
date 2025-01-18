@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from '../ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -136,7 +135,7 @@ const SearchComponent = () => {
         return;
       }
 
-      // Create the friend request
+      
       const friendRequest: FriendRequest = {
         senderId: currentUser.uid,
         recipientId: targetUser.uid,
@@ -146,7 +145,6 @@ const SearchComponent = () => {
 
       await setDoc(requestRef, friendRequest);
       
-      // Update local state
       setPendingRequests(prev => [...prev, targetUser.uid]);
       alert('Friend request sent successfully!');
     } catch (error) {
@@ -182,7 +180,7 @@ const SearchComponent = () => {
   };
 
   return (
-    <div className="relative w-64">
+    <div className="relative w-80">
       <Input
         type="text"
         placeholder="Enter friend code (e.g., 634263)"

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Bell } from 'lucide-react';
 import { DropdownMenu } from '../ui/dropdown-menu';
 import { NotificationItem } from './NotificationItem';
-import { collection, query, where, onSnapshot, updateDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, updateDoc, doc, getDoc,deleteDoc  } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -55,17 +55,15 @@ export function NotificationDropdown() {
     return () => unsubscribe();
   }, [currentUser]);
 
+
   const handleAcceptFriendRequest = async (request: FriendRequest) => {
     if (!currentUser?.uid) return;
-
+  
     try {
       const requestRef = doc(db, 'friendRequests', request.id);
       const senderRef = doc(db, 'users', request.senderId);
       const recipientRef = doc(db, 'users', currentUser.uid);
-
-      // Update the request status to "accepted"
-      await updateDoc(requestRef, { status: 'accepted' });
-
+  
       // Add the sender to the recipient's friends list
       const recipientDoc = await getDoc(recipientRef);
       if (recipientDoc.exists()) {
@@ -78,10 +76,10 @@ export function NotificationDropdown() {
             photoURL: request.senderPhotoURL
           }
         ];
-
+  
         await updateDoc(recipientRef, { friends: updatedFriends });
       }
-
+  
       // Add the recipient to the sender's friends list
       const senderDoc = await getDoc(senderRef);
       if (senderDoc.exists()) {
@@ -94,30 +92,33 @@ export function NotificationDropdown() {
             photoURL: currentUser.photoURL || ''
           }
         ];
-
+  
         await updateDoc(senderRef, { friends: updatedFriends });
       }
-
+  
+      // Delete the friend request document
+      await deleteDoc(requestRef);
+  
       // Remove the request from the local state
       setFriendRequests((prev) => prev.filter((req) => req.id !== request.id));
-
+  
     } catch (error) {
       console.error('Error accepting friend request:', error);
     }
   };
-
+  
   const handleDeclineFriendRequest = async (request: FriendRequest) => {
     if (!currentUser?.uid) return;
-
+  
     try {
       const requestRef = doc(db, 'friendRequests', request.id);
-
-      // Update the request status to "rejected"
-      await updateDoc(requestRef, { status: 'rejected' });
-
+  
+      // Delete the friend request document
+      await deleteDoc(requestRef);
+  
       // Remove the request from the local state
       setFriendRequests((prev) => prev.filter((req) => req.id !== request.id));
-
+  
     } catch (error) {
       console.error('Error declining friend request:', error);
     }

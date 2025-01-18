@@ -23,9 +23,9 @@ export function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
           </Button>
             <img src={Logo} alt="Logo" className="h-7 hidden dark:block" />
             <img src={Logo2} alt="Logo" className="h-7 dark:hidden" />
+            <SearchComponent />
         </div>
         <div className="flex items-center gap-4">
-          <SearchComponent />
           <ThemeToggle />
           <NotificationDropdown />
           <UserDropdown />

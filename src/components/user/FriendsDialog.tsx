@@ -1,8 +1,9 @@
-import  { useState } from 'react';
+import { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { X, Search, UserPlus, UserMinus, MessageCircle } from 'lucide-react';
-
+import { X, Search, UserMinus, MessageCircle } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
+import { doc, getDoc, getFirestore } from 'firebase/firestore';
+import { useAuth } from '@/contexts/AuthContext'; // Assuming you have an AuthContext
 
 interface Friend {
   id: string;
@@ -15,26 +16,62 @@ interface Friend {
 interface FriendsDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  user: FirebaseUser | null;
+  user: FirebaseUser & { friends: { uid: string }[] };
 }
 
-export function FriendsDialog({ isOpen, onOpenChange,  }: FriendsDialogProps) {
+export function FriendsDialog({ isOpen, onOpenChange }: FriendsDialogProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'friends' | 'requests'>('friends');
-  
-  // Mock data - replace with actual Firebase data fetching
-  const [friends] = useState<Friend[]>([
-    { id: '1', name: 'Sarah Johnson', photoURL: null, status: 'online' },
-    { id: '2', name: 'Mike Peters', photoURL: null, status: 'offline', lastSeen: '2 hours ago' },
-    { id: '3', name: 'Emma Wilson', photoURL: null, status: 'online' },
-  ]);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const { currentUser } = useAuth(); // Get the current user from AuthContext
+  const db = getFirestore();
 
-  const [friendRequests] = useState([
-    { id: '4', name: 'John Smith', photoURL: null },
-    { id: '5', name: 'Alice Brown', photoURL: null },
-  ]);
+  useEffect(() => {
+    const fetchFriends = async () => {
+      if (!currentUser?.uid) return;
 
-  const filteredFriends = friends.filter(friend =>
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const friendsArray = userData.friends || [];
+
+          // Map the friends array to the Friend interface
+          const mappedFriends = await Promise.all(
+            friendsArray.map(async (friend: any) => {
+              const friendRef = doc(db, 'users', friend.uid);
+              const friendDoc = await getDoc(friendRef);
+
+              if (friendDoc.exists()) {
+                const friendData = friendDoc.data();
+                return {
+                  id: friend.uid,
+                  name: friendData.displayName || 'Anonymous',
+                  photoURL: friendData.photoURL || null,
+                  status: friendData.isOnline ? 'online' : 'offline',
+                  lastSeen: friendData.lastSeen
+                    ? new Date(friendData.lastSeen.toDate()).toLocaleTimeString()
+                    : undefined,
+                };
+              }
+
+              return null;
+            })
+          );
+
+          // Filter out null values and set the friends state
+          setFriends(mappedFriends.filter((friend) => friend !== null) as Friend[]);
+        }
+      } catch (error) {
+        console.error('Error fetching friends:', error);
+      }
+    };
+
+    fetchFriends();
+  }, [currentUser, isOpen]); // Fetch friends when the dialog is opened or the current user changes
+
+  const filteredFriends = friends.filter((friend) =>
     friend.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -59,121 +96,40 @@ export function FriendsDialog({ isOpen, onOpenChange,  }: FriendsDialogProps) {
               />
             </div>
 
-            <div className="flex gap-4 mb-4">
-              <button
-                onClick={() => setActiveTab('friends')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'friends'
-                    ? 'bg-netflix-red text-white'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Friends ({friends.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('requests')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'requests'
-                    ? 'bg-netflix-red text-white'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Requests ({friendRequests.length})
-              </button>
-            </div>
-
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {activeTab === 'friends' ? (
-                filteredFriends.map((friend) => (
-                  <div
-                    key={friend.id}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-netflix-hover transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <div className="w-10 h-10 rounded-full bg-netflix-hover flex items-center justify-center">
-                          {friend.photoURL ? (
-                            <img
-                              src={friend.photoURL}
-                              alt={friend.name}
-                              className="w-full h-full rounded-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-gray-400 text-sm">
-                              {friend.name.split(' ').map(n => n[0]).join('')}
-                            </span>
-                          )}
-                        </div>
-                        <div
-                          className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-netflix-gray ${
-                            friend.status === 'online' ? 'bg-green-500' : 'bg-gray-500'
-                          }`}
-                        />
-                      </div>
-                      <div>
-                        <p className="text-white font-medium">{friend.name}</p>
-                        <p className="text-sm text-gray-400">
-                          {friend.status === 'online'
-                            ? 'Online'
-                            : `Last seen ${friend.lastSeen}`}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-netflix-hover transition-colors"
-                        title="Send message"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                      </button>
-                      <button
-                        className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-netflix-hover transition-colors"
-                        title="Remove friend"
-                      >
-                        <UserMinus className="w-4 h-4" />
-                      </button>
+            <div className="space-y-4">
+              {filteredFriends.map((friend) => (
+                <div key={friend.id} className="flex items-center space-x-4">
+                  <div className="w-10 h-10 rounded-full bg-gray-500">
+                    {friend.photoURL && (
+                      <img
+                        src={friend.photoURL}
+                        alt={friend.name}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-white font-semibold">{friend.name}</div>
+                    <div className="text-sm text-gray-400">
+                      {friend.status === 'online' ? 'Online' : `Last seen ${friend.lastSeen}`}
                     </div>
                   </div>
-                ))
-              ) : (
-                friendRequests.map((request) => (
-                  <div
-                    key={request.id}
-                    className="flex items-center justify-between p-3 rounded-lg hover:bg-netflix-hover transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-netflix-hover flex items-center justify-center">
-                        {request.photoURL ? (
-                          <img
-                            src={request.photoURL}
-                            alt={request.name}
-                            className="w-full h-full rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-gray-400 text-sm">
-                            {request.name.split(' ').map(n => n[0]).join('')}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-white font-medium">{request.name}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        className="p-2 text-green-500 hover:bg-netflix-hover rounded-lg transition-colors"
-                        title="Accept request"
-                      >
-                        <UserPlus className="w-4 h-4" />
-                      </button>
-                      <button
-                        className="p-2 text-red-500 hover:bg-netflix-hover rounded-lg transition-colors"
-                        title="Reject request"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
+                  <div className="flex space-x-2">
+                    <button
+                      className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-netflix-hover transition-colors"
+                      title="Message friend"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                    </button>
+                    <button
+                      className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-netflix-hover transition-colors"
+                      title="Remove friend"
+                    >
+                      <UserMinus className="w-4 h-4" />
+                    </button>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
           </div>
 

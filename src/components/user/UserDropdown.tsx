@@ -11,6 +11,7 @@ import { User as FirebaseUser } from 'firebase/auth';
 // Extend FirebaseUser to include customUID
 type ExtendedFirebaseUser = FirebaseUser & {
   customUID?: string;
+  friends: { uid: string }[];
 };
 
 export function UserDropdown() {
@@ -23,8 +24,8 @@ export function UserDropdown() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (authUser) => {
       if (authUser) {
-        setLoading(true);
-        setUser(authUser);
+        setUser({ ...authUser, friends: [] });
+        setUser({ ...authUser, friends: [] });
         
         try {
           const userDocRef = doc(db, 'users', authUser.uid); // Collection name 'users'
@@ -122,7 +123,7 @@ export function UserDropdown() {
               className="w-full px-4 py-2 text-sm flex items-center gap-3 text-gray-400 hover:bg-netflix-gray hover:text-white"
             >
               <User className="w-4 h-4" />
-              Profile
+              Friends
             </button>
             <Link
               to="/settings"
