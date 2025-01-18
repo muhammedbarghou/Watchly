@@ -15,7 +15,6 @@ import {
   setDoc, 
   getDoc, 
   getFirestore, 
-  collection,
   serverTimestamp,
   Timestamp
 } from 'firebase/firestore';
@@ -27,8 +26,8 @@ interface UserProfile {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  createdAt: any;
-  updatedAt: any;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
   provider: string;
   isOnline: boolean;
   friends: string[];
@@ -89,7 +88,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user profile when auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
@@ -108,59 +106,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const createUserDocument = async (user: User, customUID: string, provider: string, fullName?: string) => {
-    const userProfile: UserProfile = {
-      uid: user.uid,
-      customUID,
-      email: user.email,
-      displayName: fullName || user.displayName,
-      photoURL: user.photoURL,
-      createdAt: serverTimestamp() as Timestamp,
-      updatedAt: serverTimestamp() as Timestamp,
-      provider,
-      isOnline: true,
-      friends: [],
-      friendRequests: [],
-      blockedUsers: []
-    };
-    await setDoc(doc(db, 'users', user.uid), userProfile);
-    return userProfile;
-  };
-
-  // Helper function to generate search terms
-  const generateSearchTerms = (displayName: string): string[] => {
-    const terms = displayName.toLowerCase().split(' ');
-    const searchTerms: string[] = [];
-    
-    terms.forEach(term => {
-      for (let i = 1; i <= term.length; i++) {
-        searchTerms.push(term.substring(0, i));
-      }
-    });
-    
-    return searchTerms;
+    try {
+      const userProfile: UserProfile = {
+        uid: user.uid,
+        customUID,
+        email: user.email,
+        displayName: fullName || user.displayName,
+        photoURL: user.photoURL,
+        createdAt: serverTimestamp() as Timestamp,
+        updatedAt: serverTimestamp() as Timestamp,
+        provider,
+        isOnline: true,
+        friends: [],
+        friendRequests: [],
+        blockedUsers: []
+      };
+      await setDoc(doc(db, 'users', user.uid), userProfile);
+      return userProfile;
+    } catch (error) {
+      console.error('Error creating user document:', error);
+      throw new Error('Failed to create user document');
+    }
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    const userDoc = await getDoc(doc(db, 'users', result.user.uid));
-    if (userDoc.exists()) {
-      await setDoc(doc(db, 'users', result.user.uid), {
-        isOnline: true,
-        lastSeen: serverTimestamp()
-      }, { merge: true });
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+      if (userDoc.exists()) {
+        await setDoc(doc(db, 'users', result.user.uid), {
+          isOnline: true,
+          lastSeen: serverTimestamp()
+        }, { merge: true });
+      }
+    } catch (error) {
+      console.error('Error signing in with email:', error);
+      throw new Error('Failed to sign in with email');
     }
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const { user } = await createUserWithEmailAndPassword(auth, email, password);
-    const customUID = await generateUniqueUID();
-    
-    if (fullName) {
-      await updateProfile(user, { displayName: fullName });
+    try {
+      const { user } = await createUserWithEmailAndPassword(auth, email, password);
+      const customUID = await generateUniqueUID();
+      
+      if (fullName) {
+        await updateProfile(user, { displayName: fullName });
+      }
+      
+      const userProfile = await createUserDocument(user, customUID, 'email', fullName);
+      setUserProfile(userProfile);
+    } catch (error) {
+      console.error('Error signing up:', error);
+      throw new Error('Failed to sign up');
     }
-    
-    const userProfile = await createUserDocument(user, customUID, 'email', fullName);
-    setUserProfile(userProfile);
   };
 
   const handleSocialSignIn = async (user: User, provider: string): Promise<string> => {
@@ -188,27 +187,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    const { user } = await signInWithPopup(auth, provider);
-    const customUID = await handleSocialSignIn(user, 'google');
-    return { customUID };
+    try {
+      const provider = new GoogleAuthProvider();
+      const { user } = await signInWithPopup(auth, provider);
+      const customUID = await handleSocialSignIn(user, 'google');
+      return { customUID };
+    } catch (error) {
+      console.error('Error during Google sign-in:', error);
+      throw new Error('Failed to sign in with Google');
+    }
   };
 
   const signInWithFacebook = async () => {
-    const provider = new FacebookAuthProvider();
-    const { user } = await signInWithPopup(auth, provider);
-    const customUID = await handleSocialSignIn(user, 'facebook');
-    return { customUID };
+    try {
+      const provider = new FacebookAuthProvider();
+      const { user } = await signInWithPopup(auth, provider);
+      const customUID = await handleSocialSignIn(user, 'facebook');
+      return { customUID };
+    } catch (error) {
+      console.error('Error during Facebook sign-in:', error);
+      throw new Error('Failed to sign in with Facebook');
+    }
   };
 
   const logout = async () => {
-    if (currentUser) {
-      await setDoc(doc(db, 'users', currentUser.uid), {
-        isOnline: false,
-        lastSeen: serverTimestamp()
-      }, { merge: true });
+    try {
+      if (currentUser) {
+        await setDoc(doc(db, 'users', currentUser.uid), {
+          isOnline: false,
+          lastSeen: serverTimestamp()
+        }, { merge: true });
+      }
+      await signOut(auth);
+    } catch (error) {
+      console.error('Error logging out:', error);
+      throw new Error('Failed to log out');
     }
-    await signOut(auth);
   };
 
   const getUserCustomUID = async () => {

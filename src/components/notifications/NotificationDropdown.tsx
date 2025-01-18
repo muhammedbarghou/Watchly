@@ -1,24 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Bell } from 'lucide-react';
 import { DropdownMenu } from '../ui/dropdown-menu';
 import { NotificationItem } from './NotificationItem';
-import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface FriendRequest {
-  uid: string;
-  displayName: string;
+  id: string; // Document ID
+  recipientId: string;
+  senderId: string;
   status: string;
   timestamp: any;
-  photoURL?: string;
-}
-
-interface UserData {
-  displayName: string;
-  photoURL?: string;
-  friendRequests?: FriendRequest[];
-  friends?: any[];
+  senderName?: string; // Added for display
+  senderPhotoURL?: string; // Added for display
 }
 
 export function NotificationDropdown() {
@@ -29,36 +24,32 @@ export function NotificationDropdown() {
   useEffect(() => {
     if (!currentUser?.uid) return;
 
-    const userRef = doc(db, 'users', currentUser.uid);
-    const unsubscribe = onSnapshot(userRef, async (docSnapshot) => {
-      if (docSnapshot.exists()) {
-        const data = docSnapshot.data();
-        const requests = data.friendRequests || [];
-        
-        const updatedRequests = await Promise.all(
-          requests.map(async (request: FriendRequest) => {
-            try {
-              const senderRef = doc(db, 'users', request.uid);
-              const senderDoc = await getDoc(senderRef);
-              
-              if (senderDoc.exists()) {
-                const senderData = senderDoc.data() as UserData;
-                return {
-                  ...request,
-                  displayName: senderData.displayName || 'Anonymous',
-                  photoURL: senderData.photoURL || ''
-                };
-              }
-              return request;
-            } catch (error) {
-              console.error('Error fetching user details:', error);
-              return request;
-            }
-          })
-        );
+    // Query friend requests where the current user is the recipient
+    const friendRequestsRef = collection(db, 'friendRequests');
+    const q = query(friendRequestsRef, where('recipientId', '==', currentUser.uid));
 
-        setFriendRequests(updatedRequests);
+    // Listen for real-time updates to the friend requests collection
+    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+      const requests: FriendRequest[] = [];
+
+      for (const docSnapshot of querySnapshot.docs) {
+        const request = docSnapshot.data() as FriendRequest;
+        request.id = docSnapshot.id; // Add the document ID to the request object
+
+        // Fetch sender details
+        const senderRef = doc(db, 'users', request.senderId);
+        const senderDoc = await getDoc(senderRef);
+
+        if (senderDoc.exists()) {
+          const senderData = senderDoc.data();
+          request.senderName = senderData.displayName || 'Anonymous';
+          request.senderPhotoURL = senderData.photoURL || '';
+        }
+
+        requests.push(request);
       }
+
+      setFriendRequests(requests);
     });
 
     return () => unsubscribe();
@@ -68,49 +59,47 @@ export function NotificationDropdown() {
     if (!currentUser?.uid) return;
 
     try {
-      const userRef = doc(db, 'users', currentUser.uid);
-      const senderRef = doc(db, 'users', request.uid);
+      const requestRef = doc(db, 'friendRequests', request.id);
+      const senderRef = doc(db, 'users', request.senderId);
+      const recipientRef = doc(db, 'users', currentUser.uid);
 
-      const userDoc = await getDoc(userRef);
-      if (!userDoc.exists()) return;
+      // Update the request status to "accepted"
+      await updateDoc(requestRef, { status: 'accepted' });
 
-      const userData = userDoc.data() as UserData;
-      
-      // Filter out the accepted request and update friends list
-      const updatedRequests = userData.friendRequests?.filter(
-        req => req.uid !== request.uid
-      ) || [];
+      // Add the sender to the recipient's friends list
+      const recipientDoc = await getDoc(recipientRef);
+      if (recipientDoc.exists()) {
+        const recipientData = recipientDoc.data();
+        const updatedFriends = [
+          ...(recipientData.friends || []),
+          {
+            uid: request.senderId,
+            displayName: request.senderName,
+            photoURL: request.senderPhotoURL
+          }
+        ];
 
-      const updatedFriends = [
-        ...(userData.friends || []),
-        {
-          uid: request.uid,
-          displayName: request.displayName,
-          photoURL: request.photoURL
-        }
-      ];
+        await updateDoc(recipientRef, { friends: updatedFriends });
+      }
 
-      // Update current user's document
-      await updateDoc(userRef, {
-        friendRequests: updatedRequests,
-        friends: updatedFriends
-      });
-
-      // Update sender's friends list
+      // Add the recipient to the sender's friends list
       const senderDoc = await getDoc(senderRef);
       if (senderDoc.exists()) {
-        const senderData = senderDoc.data() as UserData;
-        await updateDoc(senderRef, {
-          friends: [
-            ...(senderData.friends || []),
-            {
-              uid: currentUser.uid,
-              displayName: currentUser.displayName || 'Anonymous',
-              photoURL: currentUser.photoURL || ''
-            }
-          ]
-        });
+        const senderData = senderDoc.data();
+        const updatedFriends = [
+          ...(senderData.friends || []),
+          {
+            uid: currentUser.uid,
+            displayName: currentUser.displayName || 'Anonymous',
+            photoURL: currentUser.photoURL || ''
+          }
+        ];
+
+        await updateDoc(senderRef, { friends: updatedFriends });
       }
+
+      // Remove the request from the local state
+      setFriendRequests((prev) => prev.filter((req) => req.id !== request.id));
 
     } catch (error) {
       console.error('Error accepting friend request:', error);
@@ -121,22 +110,13 @@ export function NotificationDropdown() {
     if (!currentUser?.uid) return;
 
     try {
-      const userRef = doc(db, 'users', currentUser.uid);
-      const userDoc = await getDoc(userRef);
-      
-      if (!userDoc.exists()) return;
+      const requestRef = doc(db, 'friendRequests', request.id);
 
-      const userData = userDoc.data() as UserData;
-      
-      // Filter out the declined request
-      const updatedRequests = userData.friendRequests?.filter(
-        req => req.uid !== request.uid
-      ) || [];
+      // Update the request status to "rejected"
+      await updateDoc(requestRef, { status: 'rejected' });
 
-      // Update the document
-      await updateDoc(userRef, {
-        friendRequests: updatedRequests
-      });
+      // Remove the request from the local state
+      setFriendRequests((prev) => prev.filter((req) => req.id !== request.id));
 
     } catch (error) {
       console.error('Error declining friend request:', error);
@@ -163,14 +143,14 @@ export function NotificationDropdown() {
           {friendRequests.length > 0 ? (
             friendRequests.map((request) => (
               <NotificationItem 
-                key={request.uid}
+                key={request.id}
                 title="Friend Request"
-                message={`${request.displayName} wants to be your friend`}
+                message={`${request.senderName} wants to be your friend`}
                 time={new Date(request.timestamp?.toDate()).toLocaleTimeString()}
                 type="friend"
                 user={{ 
-                  name: request.displayName,
-                  image: request.photoURL || '' 
+                  name: request.senderName || 'Anonymous',
+                  image: request.senderPhotoURL || '' 
                 }}
                 isRead={false}
                 onAccept={() => handleAcceptFriendRequest(request)}
