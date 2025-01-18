@@ -37,7 +37,7 @@ const SearchComponent = () => {
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [friends, setFriends] = useState<string[]>([]);
+  const [friends, setFriends] = useState<string[]>([]); // Array of friend UIDs
   const [sendingRequest, setSendingRequest] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -49,11 +49,17 @@ const SearchComponent = () => {
       if (!currentUser?.uid) return;
       
       try {
-        // Fetch friends list
+        // Fetch current user's friends list
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
-          setFriends(userDoc.data().friends || []);
+          const userData = userDoc.data();
+          console.log('User data:', userData); // Debugging: Log user data
+
+          // Ensure the friends array contains UIDs
+          const friendsArray = userData.friends || [];
+          const friendUids = friendsArray.map((friend: any) => friend.uid); // Extract UIDs
+          setFriends(friendUids);
         }
 
         // Fetch pending requests
@@ -167,12 +173,12 @@ const SearchComponent = () => {
 
   const getButtonState = (userId: string) => {
     if (friends.includes(userId)) {
-      return { text: 'Friends', disabled: true };
+      return { text: 'Friends', disabled: true, isFriend: true };
     }
     if (pendingRequests.includes(userId)) {
-      return { text: 'Request Sent', disabled: true };
+      return { text: 'Request Sent', disabled: true, isFriend: false };
     }
-    return { text: 'Add friend', disabled: false };
+    return { text: 'Add friend', disabled: false, isFriend: false };
   };
 
   return (
@@ -195,32 +201,35 @@ const SearchComponent = () => {
                   Searching...
                 </div>
               ) : filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
-                  <div
-                    key={user.uid}
-                    className="flex items-center gap-2 p-3 cursor-pointer dark:hover:bg-gray-900 transition-colors border-b dark:border-gray-800 last:border-b-0"
-                  >
-                    <Avatar>
-                      <AvatarImage
-                        src={user.photoURL || undefined}
-                        alt={`${user.displayName} profile picture`}
-                      />
-                      <AvatarFallback className="dark:bg-gray-800 dark:text-gray-200">
-                        {user.displayName?.split(' ').map(n => n[0]).join('') || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <span className="font-medium dark:text-gray-200">
-                        {user.displayName || 'Anonymous'}
-                      </span>
-                      <span className="text-sm dark:text-gray-400">
-                        #{user.customUID}
-                      </span>
-                    </div>
-                    <div className="ml-auto">
-                      {(() => {
-                        const buttonState = getButtonState(user.uid);
-                        return (
+                filteredUsers.map((user) => {
+                  const buttonState = getButtonState(user.uid);
+
+                  return (
+                    <div
+                      key={user.uid}
+                      className="flex items-center gap-2 p-3 cursor-pointer dark:hover:bg-gray-900 transition-colors border-b dark:border-gray-800 last:border-b-0"
+                    >
+                      <Avatar>
+                        <AvatarImage
+                          src={user.photoURL || undefined}
+                          alt={`${user.displayName} profile picture`}
+                        />
+                        <AvatarFallback className="dark:bg-gray-800 dark:text-gray-200">
+                          {user.displayName?.split(' ').map(n => n[0]).join('') || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="font-medium dark:text-gray-200">
+                          {user.displayName || 'Anonymous'}
+                        </span>
+                        <span className="text-sm dark:text-gray-400">
+                          #{user.customUID}
+                        </span>
+                      </div>
+                      <div className="ml-auto">
+                        {buttonState.isFriend ? (
+                          <span className="text-sm text-gray-400">Friends</span>
+                        ) : (
                           <Button 
                             variant="secondary"
                             className="text-sm"
@@ -229,11 +238,11 @@ const SearchComponent = () => {
                           >
                             {sendingRequest && !buttonState.disabled ? 'Sending...' : buttonState.text}
                           </Button>
-                        );
-                      })()}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               ) : searchQuery.length > 0 ? (
                 <div className="p-3 text-sm text-gray-400">
                   No user found with this friend code
