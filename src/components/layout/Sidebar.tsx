@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Video, Settings } from 'lucide-react';
+import { Home, Video, Settings,MessageCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export function Sidebar({ isOpen }: { isOpen: boolean }) {
@@ -9,6 +9,8 @@ export function Sidebar({ isOpen }: { isOpen: boolean }) {
     { to: '/friends', icon: Home, label: 'Home' },
     { to: '/rooms', icon: Video, label: 'Rooms' },
     { to: '/settings', icon: Settings, label: 'Settings' },
+    { to: '/chat', icon: MessageCircle, label: 'Chat' },
+
   ];
 
   return (

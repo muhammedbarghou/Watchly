@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   Play, Pause, Volume2, VolumeX, 
   Maximize, Minimize, SkipBack, SkipForward 

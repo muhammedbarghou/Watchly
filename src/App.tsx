@@ -9,6 +9,7 @@ import { RoomsPage } from './pages/RoomsPage';
 import { RoomPage } from './pages/RoomPage';
 import { SettingsPage } from './pages/SettingsPage';
 import {ResetPasswordPage} from './pages/ResetPassword';
+import {ChatPage} from './pages/ChatPage';
 
 function App() {
   return (
@@ -34,6 +35,11 @@ function App() {
           <Route path="/rooms/:id" element={
             <PrivateRoute>
               <RoomPage />
+            </PrivateRoute>
+          } />
+          <Route path="/chat" element={
+            <PrivateRoute>
+              <ChatPage />
             </PrivateRoute>
           } />
           <Route path="/settings" element={

@@ -33,7 +33,7 @@ export function SettingsLayout({ children, tabs, activeTab, onTabChange }: Setti
             ))}
           </nav>
         </div>
-        <div className="flex-1 min-h-auto bg-netflix-gray/50 rounded-lg p-6">
+        <div className="flex-1 min-h-auto  rounded-lg p-6">
           {children}
         </div>
       </div>

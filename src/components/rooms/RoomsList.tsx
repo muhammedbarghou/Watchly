@@ -7,8 +7,7 @@ export function RoomsList() {
 
   const handleCreateRoom = (data: { name: string; videoUrl: string; password?: string }) => {
     try {
-      // In a real app, you'd create the room on the backend first
-      const roomId = Date.now().toString(); // Temporary ID generation
+      const roomId = Date.now().toString();
       navigate(`/rooms/${roomId}`, {
         state: {
           name: data.name,

@@ -113,28 +113,28 @@ export function UserDropdown() {
 
         <DropdownMenu isOpen={isOpen} onClose={() => setIsOpen(false)}>
           <div className="px-4 py-3 border-b border-netflix-gray">
-            <p className="font-medium text-white">{user.displayName || 'User'}</p>
+            <p className="font-medium text-black dark:text-white">{user.displayName || 'User'}</p>
             <p className="text-sm text-gray-400">#{user.customUID || 'N/A'}</p>
           </div>
 
           <div className="py-1">
             <button
               onClick={handleProfileClick}
-              className="w-full px-4 py-2 text-sm flex items-center gap-3 text-gray-400 hover:bg-netflix-gray hover:text-white"
+              className="w-full px-4 py-2 text-sm flex items-center gap-3 dark:text-gray-400 dark:hover:bg-netflix-gray "
             >
               <User className="w-4 h-4" />
               Friends
             </button>
             <Link
               to="/settings"
-              className="px-4 py-2 text-sm flex items-center gap-3 text-gray-400 hover:bg-netflix-gray hover:text-white"
+              className="px-4 py-2 text-sm flex items-center gap-3 dark:text-gray-400 dark:hover:bg-netflix-gray"
             >
               <Settings className="w-4 h-4" />
               Settings
             </Link>
             <button
               onClick={handleSignOut}
-              className="w-full px-4 py-2 text-sm flex items-center gap-3 text-netflix-red hover:bg-netflix-gray"
+              className="w-full px-4 py-2 text-sm flex items-center gap-3 text-netflix-red "
             >
               <LogOut className="w-4 h-4" />
               Sign out

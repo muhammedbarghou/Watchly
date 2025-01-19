@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import ReactPlayer from 'react-player';
 import { VideoPlayerControls } from './VideoPlayerControls';
 import { useFullscreen } from '../../hooks/use-fullscreen';

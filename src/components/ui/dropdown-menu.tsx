@@ -16,7 +16,7 @@ export function DropdownMenu({ isOpen, onClose, children, className, align = 'ri
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
       <div className={cn(
-        "absolute z-50 mt-2 w-56 rounded-lg border border-netflix-gray bg-netflix-black shadow-lg py-1",
+        "absolute z-50 mt-2 w-56 rounded-lg border border-netflix-gray bg-white dark:bg-netflix-black shadow-lg py-1",
         align === 'right' ? 'right-0' : 'left-0',
         className
       )}>

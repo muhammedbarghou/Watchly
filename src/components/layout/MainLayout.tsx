@@ -11,7 +11,7 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-netflix-black text-foreground">
-      <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}  />
       <Sidebar isOpen={isSidebarOpen} />
       
       <main className={`pt-16 transition-all duration-200 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>

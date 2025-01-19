@@ -127,10 +127,10 @@ export function NotificationDropdown() {
   return (
     <div className="relative">
       <button 
-        className="p-2 hover:bg-netflix-gray rounded-lg relative"
+        className="p-2 hover:bg-gray-200 dark:hover:bg-netflix-gray rounded-lg relative transition-colors duration-200 ease-in-out"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <Bell className="w-6 h-6 text-gray-400" />
+        <Bell className="w-6 h-6 dark:text-gray-400" />
         {friendRequests.length > 0 && (
           <span className="absolute top-1 right-1 w-2 h-2 bg-netflix-red rounded-full" />
         )}
