@@ -13,7 +13,7 @@ interface SettingsLayoutProps {
 
 export function SettingsLayout({ children, tabs, activeTab, onTabChange }: SettingsLayoutProps) {
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="">
       <div className="flex gap-6">
         <div className="w-48 shrink-0">
           <nav className="flex flex-col gap-1">

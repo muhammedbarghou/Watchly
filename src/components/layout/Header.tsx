@@ -11,7 +11,7 @@ import { ThemeToggle } from '../ui/theme-toggle';
 export function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
   
   return (
-    <header className=" dark:bg-netflix-black fixed w-full z-50 bg-gray-100">
+    <header className="dark:bg-netflix-black w-full z-50 bg-gray-100">
       <div className="px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button 
