@@ -10,14 +10,20 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-netflix-black text-foreground">
+    <div className="h-screen bg-gray-50 dark:bg-netflix-black text-foreground flex flex-col">
       <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-      <Sidebar isOpen={isSidebarOpen} />
-        <main className={`transition-all duration-200 p-5 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
-          <div className="">
+      <div className="flex-1 flex overflow-hidden">
+        <Sidebar isOpen={isSidebarOpen} />
+        <main 
+          className={`flex-1 transition-all duration-200 ${
+            isSidebarOpen ? 'ml-64' : 'ml-0'
+          }`}
+        >
+          <div className="h-full p-5">
             {children}
           </div>
         </main>
+      </div>
     </div>
   );
 }
