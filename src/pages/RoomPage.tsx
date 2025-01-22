@@ -1,18 +1,19 @@
 import React from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { MainLayout } from '../components/layout/MainLayout';
 import { VideoPlayer } from '../components/room/VideoPlayer';
 import { ChatPanel } from '../components/room/ChatPanel';
-
-interface LocationState {
-  name?: string;
-  videoUrl?: string;
-}
+import { useAppSelector } from '@/hooks/use-room'; 
+import { RootState } from '@/store/RoomStore'; 
 
 export function RoomPage() {
-  const { id } = useParams<{ id: string }>();
-  const location = useLocation();
-  const { name, videoUrl } = (location.state as LocationState) || {};
+  const { id } = useParams<{ id: string }>(); 
+
+  // Fetch the room data from the Redux store
+  const room = useAppSelector((state: RootState) =>
+    state.room.rooms.find((room) => room.id === id)
+  );
+
   const [messages, setMessages] = React.useState([
     {
       id: '1',
@@ -38,17 +39,30 @@ export function RoomPage() {
     setMessages((prev) => [...prev, newMessage]);
   };
 
+  // If the room is not found, display a loading or error message
+  if (!room) {
+    return (
+      <MainLayout>
+        <div className="flex justify-center items-center h-full">
+          <p className="text-muted-foreground">Room not found or loading...</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="flex gap-4">
         <div className="flex-1">
-          <VideoPlayer url={videoUrl || "https://www.youtube.com/watch?v=dQw4w9WgXcQ"} />
+          {/* Use the room's video URL */}
+          <VideoPlayer url={room.videoUrl} />
           <div className="mt-4">
-            <h1 className="text-xl font-bold">{name || "Movie Night"}</h1>
-            <p className="text-muted-foreground">Room ID: {id}</p>
+            {/* Use the room's name */}
+            <h1 className="text-xl font-bold">{room.name}</h1>
+            <p className="text-muted-foreground">Room ID: {room.id}</p>
           </div>
         </div>
-        
+
         <div className="w-80">
           <ChatPanel
             messages={messages}

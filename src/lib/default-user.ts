@@ -13,7 +13,7 @@ export const defaultUser: User = {
   providerData: [],
   refreshToken: '',
   tenantId: null,
-  delete: async () => {},
+  delete: async () => { },
   getIdToken: async () => '',
   getIdTokenResult: async () => ({
     token: '',
@@ -24,6 +24,9 @@ export const defaultUser: User = {
     claims: {},
     signInSecondFactor: null
   }),
-  reload: async () => {},
-  toJSON: () => ({})
+  reload: async () => { },
+  toJSON: () => ({}),
+  phoneNumber: null,
+  photoURL: null,
+  providerId: ''
 };
