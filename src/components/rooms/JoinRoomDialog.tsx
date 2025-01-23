@@ -1,19 +1,82 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { MainLayout } from '../layout/MainLayout';
 import sidebg from "@/assets/pexels-tima-miroshnichenko-7991182.jpg";
+import { useAuth } from '@/hooks/use-auth';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { joinRoomAsync } from '@/slices/roomSlice';
+import { AppDispatch } from '@/store/Store';
 
 interface JoinRoomCardProps {
   loading?: boolean;
   error?: string | null;
 }
 
-export function JoinRoomCard({  loading, error }: JoinRoomCardProps) {
-  const [roomId, setRoomId] = React.useState('');
-  const [password, setPassword] = React.useState('');
+export function JoinRoomCard({ 
+  loading: initialLoading, 
+  error: initialError 
+}: JoinRoomCardProps) {
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  const { currentUser } = useAuth();
+  
+  const [roomKey, setRoomKey] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  const handleJoinRoom = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const roomsRef = collection(db, 'rooms');
+      const q = query(roomsRef, where('key', '==', roomKey));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        setError('Room not found');
+        setLoading(false);
+        return;
+      }
+
+      const roomDoc = querySnapshot.docs[0];
+      const roomData = roomDoc.data();
+
+      if (roomData.password && roomData.password !== password) {
+        setError('Incorrect room password');
+        setLoading(false);
+        return;
+      }
+
+      await dispatch(joinRoomAsync({ 
+        roomId: roomDoc.id, 
+        userId: currentUser.uid 
+      })).unwrap();
+
+      navigate(`/rooms/${roomDoc.id}`, { 
+        state: { 
+          videoUrl: roomData.videoUrl 
+        } 
+      });
+
+    } catch (err: any) {
+      setError(err.message || 'Failed to join room');
+      setLoading(false);
+    }
+  };
 
   return (
     <MainLayout>
@@ -21,17 +84,17 @@ export function JoinRoomCard({  loading, error }: JoinRoomCardProps) {
         <aside className='flex-1 p-4 lg:p-10 justify-center flex flex-col gap-4'>
           <h1 className='text-2xl lg:text-3xl font-bold'>Join a Theater Room</h1>
           <p className='text-balance text-sm text-muted-foreground mt-2'>
-            Enter the room ID and password (if required) to join an existing theater room.
+            Enter the room key and password (if required) to join an existing theater room.
           </p>
-          <form  className='flex flex-col gap-4 mt-6'>
+          <form onSubmit={handleJoinRoom} className='flex flex-col gap-4 mt-6'>
             <div>
-              <Label>Room ID:</Label>
+              <Label>Room Key:</Label>
               <Input
-                value={roomId}
-                onChange={(e) => setRoomId(e.target.value)}
+                value={roomKey}
+                onChange={(e) => setRoomKey(e.target.value)}
                 required
                 className='w-full'
-                placeholder="Enter Room ID"
+                placeholder="Enter Room Key"
               />
             </div>
             <div>
@@ -44,9 +107,17 @@ export function JoinRoomCard({  loading, error }: JoinRoomCardProps) {
                 placeholder="Enter Password"
               />
             </div>
-            {error && <p className='text-red-500 text-sm'>{error}</p>}
-            <Button type="submit" disabled={loading} className='w-full lg:w-auto'>
-              {loading ? 'Joining...' : 'Join Room'}
+            {(error || initialError) && (
+              <p className='text-red-500 text-sm'>
+                {error || initialError}
+              </p>
+            )}
+            <Button 
+              type="submit" 
+              disabled={loading || initialLoading} 
+              className='w-full lg:w-auto'
+            >
+              {loading || initialLoading ? 'Joining...' : 'Join Room'}
             </Button>
           </form>
         </aside>

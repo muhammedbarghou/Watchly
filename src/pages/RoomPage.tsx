@@ -29,8 +29,9 @@ export function RoomPage() {
           const roomDoc = await getDoc(doc(db, 'rooms', id));
           if (roomDoc.exists()) {
             const roomData = roomDoc.data();
-            setRoomKey(roomData.key); // Set the room key
-            setVideoUrl(roomData.videoUrl || urlFromState); // Use Firestore video URL or fallback to state
+            console.log('Room data fetched:', roomData); // Debugging log
+            setRoomKey(roomData.key || 'No key available'); // Set the room key with fallback
+            setVideoUrl(roomData.videoUrl || urlFromState || ''); // Use Firestore video URL or fallback to state
           } else {
             setError('Room document not found in Firestore.');
           }
@@ -99,14 +100,14 @@ export function RoomPage() {
           <div className="flex-1 bg-black">
             <VideoPlayer url={videoUrl} />
           </div>
-          <div className="p-4 bg-netflix-black">
-            <h1 className="text-xl font-bold text-white">{room?.name || 'Room'}</h1>
+          <div className="p-4 dark:bg-netflix-black">
+            <h1 className="text-xl font-bold dark:text-white">{room?.name || 'Room'}</h1>
             <p className="text-muted-foreground">Room Key: {roomKey || 'Loading...'}</p>
           </div>
         </div>
 
         {/* Chat Panel Section */}
-        <div className="w-96 h-full bg-netflix-black border-l border-netflix-gray">
+        <div className="w-96 h-full dark:bg-netflix-black border-l border-netflix-gray">
           <ChatPanel
             messages={messages}
             onSendMessage={handleSendMessage}

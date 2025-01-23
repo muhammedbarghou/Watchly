@@ -12,21 +12,24 @@ import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 
-
-
 export function CreateRoomCard() {
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.room); 
+  const { loading: roomLoading, error: roomError } = useSelector((state: RootState) => state.room); 
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
-  const customUID = currentUser?.customUID;
-
   
+  const { 
+    currentUser, 
+    userProfile, 
+    loading: authLoading 
+  } = useAuth();
 
   const [key, setKey] = useState('');
   const [name, setName] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [password, setPassword] = useState('');
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+
 
   const generateId = () => {
     const newId = Math.floor(Math.random() * 100000000).toString();
@@ -39,26 +42,44 @@ export function CreateRoomCard() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setSubmitError(null);
+
+    const urlRegex = /^(https?:\/\/)?(www\.)?([a-zA-Z0-9_-]+)+(\.[a-zA-Z]{2,})+(\/.*)?$/;
+    if (!urlRegex.test(videoUrl)) {
+      setSubmitError('Please enter a valid video URL.');
+      return;
+    }
 
     const roomData = {
       key,
       name,
       videoUrl,
       password,
-      createdBy: 'user-id',
+      createdBy: userProfile?.customUID || currentUser?.uid || 'anonymous',
+      creatorName: userProfile?.displayName || currentUser?.displayName || 'Anonymous User',
+      participants: [
+        {
+          uid: userProfile?.customUID || currentUser?.uid,
+          displayName: userProfile?.displayName || currentUser?.displayName,
+          email: currentUser?.email,
+          photoURL: currentUser?.photoURL
+        }
+      ]
     };
 
     try {
       const docRef = await addDoc(collection(db, 'rooms'), roomData);
-      console.log('Room created with ID:', docRef.id);
-
+      
       await dispatch(createRoomAsync(roomData)).unwrap();
 
       navigate(`/rooms/${docRef.id}`, { state: { videoUrl } });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to create room:', err);
+      setSubmitError(err.message || 'An error occurred while creating the room. Please try again.');
     }
   };
+
+  const isFormDisabled = roomLoading || authLoading || !currentUser;
 
   return (
     <MainLayout>
@@ -83,6 +104,7 @@ export function CreateRoomCard() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                disabled={isFormDisabled}
                 className='w-full'
               />
             </div>
@@ -92,6 +114,7 @@ export function CreateRoomCard() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isFormDisabled}
                 className='w-full'
               />
             </div>
@@ -101,12 +124,21 @@ export function CreateRoomCard() {
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
                 required
+                disabled={isFormDisabled}
                 className='w-full'
               />
             </div>
-            {error && <p className='text-red-500 text-sm'>{error}</p>}
-            <Button type="submit" disabled={loading} className='w-full lg:w-auto'>
-              {loading ? 'Creating...' : 'Create Room'}
+            {(roomError || submitError) && (
+              <p className='text-red-500 text-sm'>
+                {submitError || roomError}
+              </p>
+            )}
+            <Button 
+              type="submit" 
+              disabled={isFormDisabled} 
+              className='w-full lg:w-auto'
+            >
+              {roomLoading ? 'Creating...' : 'Create Room'}
             </Button>
           </form>
         </aside>
