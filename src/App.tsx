@@ -51,7 +51,21 @@ function App() {
 
   // Show a loading state while initializing auth
   if (!isAuthInitialized) {
-    return <div>Loading...</div>;
+    return <div className="h-screen flex justify-center items-center bg-black">
+    <div className="w-full gap-x-2 flex justify-center items-center">
+      <div
+        className="w-5 bg-[#d00000] h-5 rounded-full animate-bounce"
+      ></div>
+      <div
+        className="w-5 h-5 bg-[#dc2f02] rounded-full animate-bounce"
+      ></div>
+      <div
+        className="w-5 h-5 bg-[#e85d04] rounded-full animate-bounce"
+      ></div>
+      <p className='text-white'>Tip : sometimes you may have to refresh the page so you can enter the room</p>
+
+    </div>
+  </div>;
   }
 
   return (
