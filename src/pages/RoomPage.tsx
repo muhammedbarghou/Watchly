@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
 import { MainLayout } from '../components/layout/MainLayout';
 import { VideoPlayer } from '../components/room/VideoPlayer';
 import { ChatPanel } from '../components/room/ChatPanel';
@@ -10,29 +10,43 @@ import { db } from '@/lib/firebase';
 
 export function RoomPage() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const { videoUrl: urlFromState } = location.state || { videoUrl: '' }; // Get video URL from state
 
   const room = useAppSelector((state: RootState) =>
     state.room.rooms.find((room) => room.id === id)
   );
 
   const [roomKey, setRoomKey] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string>(urlFromState || ''); // Use video URL from state or Firestore
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchRoomKey = async () => {
+    const fetchRoomData = async () => {
       if (id) {
-        const roomDoc = await getDoc(doc(db, 'rooms', id));
-        if (roomDoc.exists()) {
-          setRoomKey(roomDoc.data().key); // Set the room key
-        } else {
-          console.error('Room document not found in Firestore.');
+        try {
+          const roomDoc = await getDoc(doc(db, 'rooms', id));
+          if (roomDoc.exists()) {
+            const roomData = roomDoc.data();
+            setRoomKey(roomData.key); // Set the room key
+            setVideoUrl(roomData.videoUrl || urlFromState); // Use Firestore video URL or fallback to state
+          } else {
+            setError('Room document not found in Firestore.');
+          }
+        } catch (err) {
+          setError('Failed to fetch room data.');
+          console.error('Error fetching room data:', err);
+        } finally {
+          setLoading(false);
         }
       }
     };
 
-    fetchRoomKey();
-  }, [id]);
+    fetchRoomData();
+  }, [id, urlFromState]);
 
-  const [messages, setMessages] = React.useState([
+  const [messages, setMessages] = useState([
     {
       id: '1',
       username: 'John',
@@ -57,31 +71,42 @@ export function RoomPage() {
     setMessages((prev) => [...prev, newMessage]);
   };
 
-  // If the room is not found, display a loading or error message
-  if (!room) {
+  if (loading) {
     return (
       <MainLayout>
         <div className="flex justify-center items-center h-full">
-          <p className="text-muted-foreground">Room not found or loading...</p>
+          <p className="text-muted-foreground">Loading room data...</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="flex justify-center items-center h-full">
+          <p className="text-red-500">{error}</p>
         </div>
       </MainLayout>
     );
   }
 
   return (
-      <div className="flex">
-        <div className="flex-1">
-          {/* Use the room's video URL */}
-          <VideoPlayer url={room.videoUrl} />
-          <div className="mt-4">
-            {/* Use the room's name */}
-            <h1 className="text-xl font-bold">{room.name}</h1>
-            {/* Display the room's key */}
+    <MainLayout>
+      <div className="flex h-[calc(100vh-64px)]"> {/* Subtract the height of the header (64px) */}
+        {/* Video Player Section */}
+        <div className="flex-1 flex flex-col h-full">
+          <div className="flex-1 bg-black">
+            <VideoPlayer url={videoUrl} />
+          </div>
+          <div className="p-4 bg-netflix-black">
+            <h1 className="text-xl font-bold text-white">{room?.name || 'Room'}</h1>
             <p className="text-muted-foreground">Room Key: {roomKey || 'Loading...'}</p>
           </div>
         </div>
 
-        <div className="w-80">
+        {/* Chat Panel Section */}
+        <div className="w-96 h-full bg-netflix-black border-l border-netflix-gray">
           <ChatPanel
             messages={messages}
             onSendMessage={handleSendMessage}
@@ -89,5 +114,6 @@ export function RoomPage() {
           />
         </div>
       </div>
+    </MainLayout>
   );
 }

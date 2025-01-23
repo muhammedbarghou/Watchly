@@ -40,6 +40,7 @@ interface SerializableUser {
   displayName: string | null;
   photoURL: string | null;
   emailVerified: boolean;
+  customUID?: string;
 }
 
 interface AuthState {

@@ -1,8 +1,15 @@
-import { 
-  Play, Pause, Volume2, VolumeX, 
-  Maximize, Minimize, SkipBack, SkipForward 
+import {
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize,
+  Minimize,
+  SkipBack,
+  SkipForward,
 } from 'lucide-react';
 import { Button } from '../ui/button';
+import { Slider } from '../ui/slider'; // Use a custom Slider component for better styling
 
 interface VideoPlayerControlsProps {
   playing: boolean;
@@ -25,70 +32,91 @@ export function VideoPlayerControls({
   onMute,
   onVolumeChange,
   onFullscreen,
-  onSeek
+  onSeek,
 }: VideoPlayerControlsProps) {
   return (
     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
+        {/* Play/Pause Button */}
         <Button
           variant="ghost"
           size="icon"
           onClick={onPlayPause}
           aria-label={playing ? 'Pause' : 'Play'}
+          className="hover:bg-white/10 rounded-full p-2 transition-colors"
         >
-          {playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+          {playing ? (
+            <Pause className="w-6 h-6 text-white" />
+          ) : (
+            <Play className="w-6 h-6 text-white" />
+          )}
         </Button>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onMute}
-          aria-label={muted ? 'Unmute' : 'Mute'}
-        >
-          {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-        </Button>
+        {/* Volume Controls */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onMute}
+            aria-label={muted ? 'Unmute' : 'Mute'}
+            className="hover:bg-white/10 rounded-full p-2 transition-colors"
+          >
+            {muted ? (
+              <VolumeX className="w-6 h-6 text-white" />
+            ) : (
+              <Volume2 className="w-6 h-6 text-white" />
+            )}
+          </Button>
 
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.1"
-          value={volume}
-          onChange={(e) => onVolumeChange(Number(e.target.value))}
-          className="w-24"
-          aria-label="Volume"
-        />
+          <Slider
+            min={0}
+            max={1}
+            step={0.1}
+            value={[volume]}
+            onValueChange={(value) => onVolumeChange(value[0])}
+            className="w-24"
+            aria-label="Volume"
+          />
+        </div>
 
+        {/* Seek Buttons */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onSeek(-10)}
+            aria-label="Rewind 10 seconds"
+            className="hover:bg-white/10 rounded-full p-2 transition-colors"
+          >
+            <SkipBack className="w-6 h-6 text-white" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onSeek(10)}
+            aria-label="Forward 10 seconds"
+            className="hover:bg-white/10 rounded-full p-2 transition-colors"
+          >
+            <SkipForward className="w-6 h-6 text-white" />
+          </Button>
+        </div>
+
+        {/* Spacer */}
         <div className="flex-1" />
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onSeek(-10)}
-          aria-label="Rewind 10 seconds"
-        >
-          <SkipBack className="w-5 h-5" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onSeek(10)}
-          aria-label="Forward 10 seconds"
-        >
-          <SkipForward className="w-5 h-5" />
-        </Button>
-
+        {/* Fullscreen Button */}
         <Button
           variant="ghost"
           size="icon"
           onClick={onFullscreen}
           aria-label={fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          className="hover:bg-white/10 rounded-full p-2 transition-colors"
         >
           {fullscreen ? (
-            <Minimize className="w-5 h-5" />
+            <Minimize className="w-6 h-6 text-white" />
           ) : (
-            <Maximize className="w-5 h-5" />
+            <Maximize className="w-6 h-6 text-white" />
           )}
         </Button>
       </div>

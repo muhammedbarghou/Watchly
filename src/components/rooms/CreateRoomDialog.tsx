@@ -5,12 +5,23 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { MainLayout } from '../layout/MainLayout';
 import sidebg from "@/assets/pexels-tima-miroshnichenko-7991182.jpg";
-import { createRoomAsync } from '@/slices/roomSlice'; // Import the createRoomAsync thunk
-import { AppDispatch, RootState } from '@/store/Store'; // Import your store types
+import { createRoomAsync } from '@/slices/roomSlice'; 
+import { AppDispatch, RootState } from '@/store/Store';
+import { useNavigate } from 'react-router-dom';
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/hooks/use-auth';
+
+
 
 export function CreateRoomCard() {
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.room); // Access room slice state
+  const { loading, error } = useSelector((state: RootState) => state.room); 
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const customUID = currentUser?.customUID;
+
+  
 
   const [key, setKey] = useState('');
   const [name, setName] = useState('');
@@ -29,19 +40,21 @@ export function CreateRoomCard() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Prepare room data
     const roomData = {
       key,
       name,
       videoUrl,
       password,
-      createdBy: 'user-id', // Replace with the actual user ID (e.g., from auth state)
+      createdBy: 'user-id',
     };
 
-    // Dispatch createRoomAsync
     try {
+      const docRef = await addDoc(collection(db, 'rooms'), roomData);
+      console.log('Room created with ID:', docRef.id);
+
       await dispatch(createRoomAsync(roomData)).unwrap();
-      alert('Room created successfully!');
+
+      navigate(`/rooms/${docRef.id}`, { state: { videoUrl } });
     } catch (err) {
       console.error('Failed to create room:', err);
     }
@@ -50,13 +63,12 @@ export function CreateRoomCard() {
   return (
     <MainLayout>
       <main className='h-full w-full flex flex-col lg:flex-row'>
-        {/* Form Section */}
-        <aside className='flex-1 p-4 lg:p-10'>
+        <aside className='flex-1 p-4 lg:p-10 '>
           <h1 className='text-2xl lg:text-3xl font-bold'>Start your own theater</h1>
           <p className='text-balance text-sm text-muted-foreground mt-2'>
             Create your own theater room and invite your friends
           </p>
-          <form onSubmit={handleSubmit} className='flex flex-col gap-4 mt-6'>
+          <form onSubmit={handleSubmit} className='flex flex-col gap-4 mt-6 p-5'>
             <div>
               <Label>Room ID:</Label>
               <Input
@@ -99,7 +111,6 @@ export function CreateRoomCard() {
           </form>
         </aside>
 
-        {/* Image Section (Hidden on small screens) */}
         <div className="relative flex-1 hidden lg:flex items-center justify-center h-screen">
           <img
             src={sidebg}
