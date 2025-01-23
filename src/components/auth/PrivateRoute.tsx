@@ -10,7 +10,21 @@ export function PrivateRoute({ children }: PrivateRouteProps) {
   const { currentUser, loading } = useAppSelector((state) => state.auth);
 
   if (loading) {
-    return <div>Loading...</div>; 
+    return <>
+    <div className="h-screen flex justify-center items-center bg-black">
+      <div className="w-full gap-x-2 flex justify-center items-center">
+        <div
+          className="w-5 bg-[#d00000] h-5 rounded-full animate-bounce"
+        ></div>
+        <div
+          className="w-5 h-5 bg-[#dc2f02] rounded-full animate-bounce"
+        ></div>
+        <div
+          className="w-5 h-5 bg-[#e85d04] rounded-full animate-bounce"
+        ></div>
+      </div>
+    </div>
+    </>; 
   }
 
   if (!currentUser) {
