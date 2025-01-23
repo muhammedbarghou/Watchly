@@ -3,7 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X, Search, UserMinus, MessageCircle } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
-import { useAuth } from '@/contexts/AuthContext'; // Assuming you have an AuthContext
+import { useAuth } from '@/hooks/use-auth'; 
 
 interface Friend {
   id: string;

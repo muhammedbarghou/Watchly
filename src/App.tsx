@@ -1,20 +1,20 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
 import { PrivateRoute } from './components/auth/PrivateRoute';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { FriendsPage } from './pages/FriendsPage';
-import { RoomsPage } from './pages/RoomsPage';
 import { RoomPage } from './pages/RoomPage';
 import { SettingsPage } from './pages/SettingsPage';
 import {ResetPasswordPage} from './pages/ResetPassword';
 import {ChatPage} from './pages/ChatPage';
+import { CreateRoomCard } from '@/components/rooms/CreateRoomDialog';
+import { JoinRoomCard } from './components/rooms/JoinRoomDialog';
+
 
 function App() {
   return (
     <Router>
-      <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -27,9 +27,19 @@ function App() {
               <FriendsPage />
             </PrivateRoute>
           } />
-          <Route path="/rooms" element={
+
+          <Route path="/join" element={
             <PrivateRoute>
-              <RoomsPage />
+              <JoinRoomCard onSubmit={function (_data: { roomId: string; password?: string; }): void {
+                throw new Error('Function not implemented.');
+              } } />
+            </PrivateRoute>
+          } />
+          <Route path="/create" element={
+            <PrivateRoute>
+              <CreateRoomCard onSubmit={function (_data: { name: string; videoUrl: string; password?: string; }): void {
+                throw new Error('Function not implemented.');
+              } } />
             </PrivateRoute>
           } />
           <Route path="/rooms/:id" element={
@@ -48,7 +58,6 @@ function App() {
             </PrivateRoute>
           } />
         </Routes>
-      </AuthProvider>
     </Router>
   );
 }

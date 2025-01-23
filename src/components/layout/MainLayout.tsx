@@ -19,7 +19,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             isSidebarOpen ? 'ml-64' : 'ml-0'
           }`}
         >
-          <div className="h-full p-5">
+          <div className="h-full">
             {children}
           </div>
         </main>

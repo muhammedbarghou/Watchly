@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/use-auth'
 import { SocialAuthButtons } from '@/components/auth/SocialAuthButtons'
 import { useState } from 'react'
 
@@ -15,48 +15,56 @@ const signupSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters')
 });
 
-
-
 type SignupFormData = z.infer<typeof signupSchema>;
 
 export function SignForm() {
   const navigate = useNavigate();
-  const { signUp,signInWithGoogle, signInWithFacebook } = useAuth();
+  const { signUp, signInWithGoogle, signInWithFacebook, loading, error: authError } = useAuth();
   const [error, setError] = useState<string>('');
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<SignupFormData>({
+  const { 
+    register, 
+    handleSubmit, 
+    formState: { errors } 
+  } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema)
   });
 
   const onSubmit = async (data: SignupFormData) => {
     try {
+      setError('');
       await signUp(data.email, data.password, data.fullName);
       navigate('/friends');
     } catch (error) {
-      console.error('Signup error:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'An unexpected error occurred during signup';
+      setError(errorMessage);
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
       setError('');
-      const { customUID } = await signInWithGoogle();
-      console.log('Signed up with Google, custom UID:', customUID);
+      await signInWithGoogle();
       navigate('/friends');
     } catch (error) {
-      console.error('Google sign in error:', error);
-      setError('Failed to sign in with Google. Please try again.');
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Failed to sign in with Google';
+      setError(errorMessage);
     }
   };
 
   const handleFacebookSignIn = async () => {
     try {
       setError('');
-      const { customUID } = await signInWithFacebook();
-      console.log('Signed up with Facebook, custom UID:', customUID);
+      await signInWithFacebook();
       navigate('/friends');
     } catch (error) {
-      console.error('Facebook sign in error:', error);
-      setError('Failed to sign in with Facebook. Please try again.');
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Failed to sign in with Facebook';
+      setError(errorMessage);
     }
   };
 
@@ -69,9 +77,9 @@ export function SignForm() {
         </p>
       </div>
 
-      {error && (
+      {(error || authError) && (
         <div className="p-3 text-sm text-red-500 bg-red-100 rounded-md">
-          {error}
+          {error || authError}
         </div>
       )}
 
@@ -83,7 +91,7 @@ export function SignForm() {
             type="text" 
             placeholder="John Doe" 
             {...register('fullName')}
-            disabled={isSubmitting}
+            disabled={loading}
           />
           {errors.fullName && (
             <p className="text-red-500 text-sm">{errors.fullName?.message}</p>
@@ -97,7 +105,7 @@ export function SignForm() {
             type="email" 
             placeholder="m@example.com" 
             {...register('email')}
-            disabled={isSubmitting}
+            disabled={loading}
           />
           {errors.email && (
             <p className="text-red-500 text-sm">{errors.email.message}</p>
@@ -112,7 +120,7 @@ export function SignForm() {
             id="password" 
             type="password" 
             {...register('password')}
-            disabled={isSubmitting}
+            disabled={loading}
           />
           {errors.password && (
             <p className="text-red-500 text-sm">{errors.password.message}</p>
@@ -122,15 +130,15 @@ export function SignForm() {
         <Button 
           type="submit" 
           className="w-full"
-          disabled={isSubmitting}
+          disabled={loading}
         >
-          {isSubmitting ? 'Creating Account...' : 'Create Account'}
+          {loading ? 'Creating Account...' : 'Create Account'}
         </Button>
         
         <SocialAuthButtons
           onGoogleClick={handleGoogleSignIn}
           onFacebookClick={handleFacebookSignIn}
-          disabled={isSubmitting}
+          disabled={loading}
         />
       </div>
 

@@ -4,7 +4,7 @@ import { DropdownMenu } from '../ui/dropdown-menu';
 import { NotificationItem } from './NotificationItem';
 import { collection, query, where, onSnapshot, updateDoc, doc, getDoc,deleteDoc  } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/use-auth';
 
 interface FriendRequest {
   id: string; // Document ID

@@ -7,6 +7,7 @@ export interface RoomData {
 }
 
 export interface Room extends RoomData {
+  key: ReactNode;
   id: string;
   participants: string[];
   createdAt: Date;

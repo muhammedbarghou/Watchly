@@ -1,13 +1,12 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import {
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { 
   User,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
   signInWithPopup,
   GoogleAuthProvider,
   FacebookAuthProvider,
   signOut,
-  onAuthStateChanged,
   updateProfile
 } from 'firebase/auth';
 import { 
@@ -35,18 +34,13 @@ interface UserProfile {
   blockedUsers: string[];
 }
 
-interface AuthContextType {
+interface AuthState {
   currentUser: User | null;
   userProfile: UserProfile | null;
-  signInWithEmail: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName?: string) => Promise<void>;
-  signInWithGoogle: () => Promise<{ customUID: string }>;
-  signInWithFacebook: () => Promise<{ customUID: string }>;
-  logout: () => Promise<void>;
-  getUserCustomUID: () => Promise<string | null>;
+  loading: boolean;
+  error: string | null;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
 const db = getFirestore();
 
 const generateCustomUID = (): string => {
@@ -83,69 +77,54 @@ const generateUniqueUID = async (): Promise<string> => {
   throw new Error('Failed to generate unique UID after multiple attempts');
 };
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+export const createUserDocument = async (user: User, customUID: string, provider: string, fullName?: string): Promise<UserProfile> => {
+  try {
+    const userProfile: UserProfile = {
+      uid: user.uid,
+      customUID,
+      email: user.email,
+      displayName: fullName || user.displayName,
+      photoURL: user.photoURL,
+      createdAt: serverTimestamp() as Timestamp,
+      updatedAt: serverTimestamp() as Timestamp,
+      provider,
+      isOnline: true,
+      friends: [],
+      friendRequests: [],
+      blockedUsers: []
+    };
+    await setDoc(doc(db, 'users', user.uid), userProfile);
+    return userProfile;
+  } catch (error) {
+    console.error('Error creating user document:', error);
+    throw new Error('Failed to create user document');
+  }
+};
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          setUserProfile(userDoc.data() as UserProfile);
-        }
-      } else {
-        setUserProfile(null);
-      }
-      setLoading(false);
-    });
-
-    return unsubscribe;
-  }, []);
-
-  const createUserDocument = async (user: User, customUID: string, provider: string, fullName?: string) => {
-    try {
-      const userProfile: UserProfile = {
-        uid: user.uid,
-        customUID,
-        email: user.email,
-        displayName: fullName || user.displayName,
-        photoURL: user.photoURL,
-        createdAt: serverTimestamp() as Timestamp,
-        updatedAt: serverTimestamp() as Timestamp,
-        provider,
-        isOnline: true,
-        friends: [],
-        friendRequests: [],
-        blockedUsers: []
-      };
-      await setDoc(doc(db, 'users', user.uid), userProfile);
-      return userProfile;
-    } catch (error) {
-      console.error('Error creating user document:', error);
-      throw new Error('Failed to create user document');
-    }
-  };
-
-  const signInWithEmail = async (email: string, password: string) => {
+export const signInWithEmailThunk = createAsyncThunk(
+  'auth/signInWithEmail',
+  async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+      
       if (userDoc.exists()) {
         await setDoc(doc(db, 'users', result.user.uid), {
           isOnline: true,
           lastSeen: serverTimestamp()
         }, { merge: true });
       }
+      
+      return result.user;
     } catch (error) {
-      console.error('Error signing in with email:', error);
-      throw new Error('Failed to sign in with email');
+      return rejectWithValue('Failed to sign in with email');
     }
-  };
+  }
+);
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
+export const signUpThunk = createAsyncThunk(
+  'auth/signUp',
+  async ({ email, password, fullName }: { email: string; password: string; fullName?: string }, { rejectWithValue }) => {
     try {
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       const customUID = await generateUniqueUID();
@@ -155,111 +134,171 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       const userProfile = await createUserDocument(user, customUID, 'email', fullName);
-      setUserProfile(userProfile);
+      return { user, userProfile };
     } catch (error) {
-      console.error('Error signing up:', error);
-      throw new Error('Failed to sign up');
+      return rejectWithValue('Failed to sign up');
     }
-  };
+  }
+);
 
-  const handleSocialSignIn = async (user: User, provider: string): Promise<string> => {
-    try {
-      const userRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userRef);
-      
-      if (!userDoc.exists()) {
-        const customUID = await generateUniqueUID();
-        const userProfile = await createUserDocument(user, customUID, provider);
-        setUserProfile(userProfile);
-        return customUID;
-      } else {
-        await setDoc(userRef, {
-          isOnline: true,
-          lastSeen: serverTimestamp()
-        }, { merge: true });
-        setUserProfile(userDoc.data() as UserProfile);
-        return userDoc.data().customUID;
-      }
-    } catch (error) {
-      console.error('Error handling social sign-in:', error);
-      throw new Error('Failed to handle social sign-in');
+const handleSocialSignIn = async (user: User, provider: string): Promise<{ user: User; userProfile: UserProfile }> => {
+  try {
+    const userRef = doc(db, 'users', user.uid);
+    const userDoc = await getDoc(userRef);
+    
+    let userProfile: UserProfile;
+    if (!userDoc.exists()) {
+      const customUID = await generateUniqueUID();
+      userProfile = await createUserDocument(user, customUID, provider);
+    } else {
+      await setDoc(userRef, {
+        isOnline: true,
+        lastSeen: serverTimestamp()
+      }, { merge: true });
+      userProfile = userDoc.data() as UserProfile;
     }
-  };
+    
+    return { user, userProfile };
+  } catch (error) {
+    throw new Error('Failed to handle social sign-in');
+  }
+};
 
-  const signInWithGoogle = async () => {
+export const signInWithGoogleThunk = createAsyncThunk(
+  'auth/signInWithGoogle',
+  async (_, { rejectWithValue }) => {
     try {
       const provider = new GoogleAuthProvider();
       const { user } = await signInWithPopup(auth, provider);
-      const customUID = await handleSocialSignIn(user, 'google');
-      return { customUID };
+      const { userProfile } = await handleSocialSignIn(user, 'google');
+      return { user, userProfile };
     } catch (error) {
-      console.error('Error during Google sign-in:', error);
-      throw new Error('Failed to sign in with Google');
+      return rejectWithValue('Failed to sign in with Google');
     }
-  };
+  }
+);
 
-  const signInWithFacebook = async () => {
+export const signInWithFacebookThunk = createAsyncThunk(
+  'auth/signInWithFacebook',
+  async (_, { rejectWithValue }) => {
     try {
       const provider = new FacebookAuthProvider();
       const { user } = await signInWithPopup(auth, provider);
-      const customUID = await handleSocialSignIn(user, 'facebook');
-      return { customUID };
+      const { userProfile } = await handleSocialSignIn(user, 'facebook');
+      return { user, userProfile };
     } catch (error) {
-      console.error('Error during Facebook sign-in:', error);
-      throw new Error('Failed to sign in with Facebook');
+      return rejectWithValue('Failed to sign in with Facebook');
     }
-  };
+  }
+);
 
-  const logout = async () => {
+export const logoutThunk = createAsyncThunk(
+  'auth/logout',
+  async (_, { getState, rejectWithValue }) => {
     try {
+      const state = getState() as { auth: AuthState };
+      const currentUser = state.auth.currentUser;
+      
       if (currentUser) {
         await setDoc(doc(db, 'users', currentUser.uid), {
           isOnline: false,
           lastSeen: serverTimestamp()
         }, { merge: true });
       }
+      
       await signOut(auth);
     } catch (error) {
-      console.error('Error logging out:', error);
-      throw new Error('Failed to log out');
+      return rejectWithValue('Failed to log out');
     }
-  };
-
-  const getUserCustomUID = async () => {
-    if (!currentUser) return null;
-    
-    try {
-      const userRef = doc(db, 'users', currentUser.uid);
-      const userDoc = await getDoc(userRef);
-      return userDoc.exists() ? userDoc.data().customUID : null;
-    } catch (error) {
-      console.error('Error getting user custom UID:', error);
-      throw new Error('Failed to get user custom UID');
-    }
-  };
-
-  const value = {
-    currentUser,
-    userProfile,
-    signInWithEmail,
-    signUp,
-    signInWithGoogle,
-    signInWithFacebook,
-    logout,
-    getUserCustomUID
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
-    </AuthContext.Provider>
-  );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context;
-}
+);
+
+const initialState: AuthState = {
+  currentUser: null,
+  userProfile: null,
+  loading: false,
+  error: null
+};
+
+const authSlice = createSlice({
+  name: 'auth',
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    // Sign In with Email
+    builder.addCase(signInWithEmailThunk.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(signInWithEmailThunk.fulfilled, (state, action) => {
+      state.currentUser = action.payload;
+      state.loading = false;
+    });
+    builder.addCase(signInWithEmailThunk.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
+    // Sign Up
+    builder.addCase(signUpThunk.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(signUpThunk.fulfilled, (state, action) => {
+      state.currentUser = action.payload.user;
+      state.userProfile = action.payload.userProfile;
+      state.loading = false;
+    });
+    builder.addCase(signUpThunk.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
+    // Sign In with Google
+    builder.addCase(signInWithGoogleThunk.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(signInWithGoogleThunk.fulfilled, (state, action) => {
+      state.currentUser = action.payload.user;
+      state.userProfile = action.payload.userProfile;
+      state.loading = false;
+    });
+    builder.addCase(signInWithGoogleThunk.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
+    // Sign In with Facebook
+    builder.addCase(signInWithFacebookThunk.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(signInWithFacebookThunk.fulfilled, (state, action) => {
+      state.currentUser = action.payload.user;
+      state.userProfile = action.payload.userProfile;
+      state.loading = false;
+    });
+    builder.addCase(signInWithFacebookThunk.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
+    // Logout
+    builder.addCase(logoutThunk.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(logoutThunk.fulfilled, (state) => {
+      state.currentUser = null;
+      state.userProfile = null;
+      state.loading = false;
+    });
+    builder.addCase(logoutThunk.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+  }
+});
+
+export default authSlice.reducer;
