@@ -118,39 +118,43 @@ export const createUserDocument = async (
 export const initializeAuth = createAsyncThunk(
   'auth/initializeAuth',
   async (_, { rejectWithValue }) => {
-    return new Promise<{ user: SerializableUser | null; userProfile: UserProfile | null }>(
-      (resolve, reject) => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-          unsubscribe();
+    try {
+      return new Promise<{ user: SerializableUser | null; userProfile: UserProfile | null }>(
+        (resolve, reject) => {
+          const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            unsubscribe();
 
-          if (user) {
-            try {
-              const userDocRef = doc(db, 'users', user.uid);
-              const userDoc = await getDoc(userDocRef);
+            if (user) {
+              try {
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDoc = await getDoc(userDocRef);
 
-              // Extract serializable user data
-              const serializableUser = {
-                uid: user.uid,
-                email: user.email,
-                displayName: user.displayName,
-                photoURL: user.photoURL,
-                emailVerified: user.emailVerified,
-              };
+                // Extract serializable user data
+                const serializableUser = {
+                  uid: user.uid,
+                  email: user.email,
+                  displayName: user.displayName,
+                  photoURL: user.photoURL,
+                  emailVerified: user.emailVerified,
+                };
 
-              resolve({
-                user: serializableUser,
-                userProfile: userDoc.exists() ? (userDoc.data() as UserProfile) : null,
-              });
-            } catch (error) {
-              console.error('Error fetching user profile:', error);
-              reject(rejectWithValue('Failed to initialize auth'));
+                resolve({
+                  user: serializableUser,
+                  userProfile: userDoc.exists() ? (userDoc.data() as UserProfile) : null,
+                });
+              } catch (error) {
+                console.error('Error fetching user profile:', error);
+                reject(rejectWithValue('Failed to initialize auth'));
+              }
+            } else {
+              resolve({ user: null, userProfile: null });
             }
-          } else {
-            resolve({ user: null, userProfile: null });
-          }
-        });
-      }
-    );
+          });
+        }
+      );
+    } catch (error) {
+      return rejectWithValue('Failed to initialize auth');
+    }
   }
 );
 

@@ -6,19 +6,14 @@ import { MainLayout } from '../layout/MainLayout';
 import sidebg from "@/assets/pexels-tima-miroshnichenko-7991182.jpg";
 
 interface JoinRoomCardProps {
-  onSubmit: (data: { roomId: string; password?: string }) => void;
   loading?: boolean;
   error?: string | null;
 }
 
-export function JoinRoomCard({ onSubmit, loading, error }: JoinRoomCardProps) {
+export function JoinRoomCard({  loading, error }: JoinRoomCardProps) {
   const [roomId, setRoomId] = React.useState('');
   const [password, setPassword] = React.useState('');
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    onSubmit({ roomId, password });
-  };
 
   return (
     <MainLayout>
@@ -28,7 +23,7 @@ export function JoinRoomCard({ onSubmit, loading, error }: JoinRoomCardProps) {
           <p className='text-balance text-sm text-muted-foreground mt-2'>
             Enter the room ID and password (if required) to join an existing theater room.
           </p>
-          <form onSubmit={handleSubmit} className='flex flex-col gap-4 mt-6'>
+          <form  className='flex flex-col gap-4 mt-6'>
             <div>
               <Label>Room ID:</Label>
               <Input

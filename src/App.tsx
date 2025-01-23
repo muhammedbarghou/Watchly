@@ -1,28 +1,26 @@
 import { useEffect, useCallback } from 'react';
-import { useDispatch } from 'react-redux';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { initializeAuth } from '@/contexts/AuthContext';
-import { PrivateRoute } from './components/auth/PrivateRoute'; // Named export
-import { LandingPage } from './pages/LandingPage'; // Named export
-import { LoginPage } from './pages/LoginPage'; // Named export
-import { SignupPage } from './pages/SignupPage'; // Named export
-import { FriendsPage } from './pages/FriendsPage'; // Named export
-import { RoomPage } from './pages/RoomPage'; // Named export
-import { SettingsPage } from './pages/SettingsPage'; // Named export
-import { ResetPasswordPage } from './pages/ResetPassword'; // Named export
-import { ChatPage } from './pages/ChatPage'; // Named export
-import { CreateRoomCard } from '@/components/rooms/CreateRoomDialog'; // Named export
-import { JoinRoomCard } from './components/rooms/JoinRoomDialog'; // Named export
-import ErrorBoundary  from './components/auth/ErrorBoundary'; // Named export
+import { useAppDispatch } from './store/Store'; 
+import { PrivateRoute } from './components/auth/PrivateRoute';
+import { LandingPage } from './pages/LandingPage'; 
+import { LoginPage } from './pages/LoginPage'; 
+import { SignupPage } from './pages/SignupPage'; 
+import { FriendsPage } from './pages/FriendsPage'; 
+import { RoomPage } from './pages/RoomPage'; 
+import { SettingsPage } from './pages/SettingsPage'; 
+import { ResetPasswordPage } from './pages/ResetPassword'; 
+import { ChatPage } from './pages/ChatPage'; 
+import { CreateRoomCard } from '@/components/rooms/CreateRoomDialog'; 
+import { JoinRoomCard } from './components/rooms/JoinRoomDialog'; 
+import ErrorBoundary  from './components/auth/ErrorBoundary'; 
 
-// Define the type for a route
 interface RouteConfig {
   path: string;
   element: React.ReactNode;
   isPrivate: boolean;
 }
 
-// Define routes in a configuration object
 const routes: RouteConfig[] = [
   { path: '/', element: <LandingPage />, isPrivate: false },
   { path: '/login', element: <LoginPage />, isPrivate: false },
@@ -37,10 +35,9 @@ const routes: RouteConfig[] = [
 ];
 
 function App() {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch(); 
 
-  // Memoize initializeAuth to avoid unnecessary re-renders
-  const initializeAuthMemoized = useCallback(() => {
+  const initializeAuthMemoized = useCallback(async () => {
     dispatch(initializeAuth());
   }, [dispatch]);
 
