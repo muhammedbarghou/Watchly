@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { MainLayout } from '../layout/MainLayout';
 import sidebg from "@/assets/pexels-tima-miroshnichenko-7991182.jpg";
+import { createRoomAsync } from '@/slices/roomSlice'; // Import the createRoomAsync thunk
+import { AppDispatch, RootState } from '@/store/Store'; // Import your store types
 
-interface CreateRoomCardProps {
-  onSubmit: (data: { key: string; name: string; videoUrl: string; password?: string }) => void;
-  loading?: boolean;
-  error?: string | null;
-}
+export function CreateRoomCard() {
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading, error } = useSelector((state: RootState) => state.room); // Access room slice state
 
-export function CreateRoomCard({ onSubmit, loading, error }: CreateRoomCardProps) {
   const [key, setKey] = useState('');
   const [name, setName] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
@@ -26,9 +26,25 @@ export function CreateRoomCard({ onSubmit, loading, error }: CreateRoomCardProps
     generateId();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSubmit({ key, name, videoUrl, password });
+
+    // Prepare room data
+    const roomData = {
+      key,
+      name,
+      videoUrl,
+      password,
+      createdBy: 'user-id', // Replace with the actual user ID (e.g., from auth state)
+    };
+
+    // Dispatch createRoomAsync
+    try {
+      await dispatch(createRoomAsync(roomData)).unwrap();
+      alert('Room created successfully!');
+    } catch (err) {
+      console.error('Failed to create room:', err);
+    }
   };
 
   return (

@@ -15,56 +15,48 @@ const signupSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters')
 });
 
+
+
 type SignupFormData = z.infer<typeof signupSchema>;
 
 export function SignForm() {
   const navigate = useNavigate();
-  const { signUp, signInWithGoogle, signInWithFacebook, loading, error: authError } = useAuth();
+  const { signUp,signInWithGoogle, signInWithFacebook } = useAuth();
   const [error, setError] = useState<string>('');
-  const { 
-    register, 
-    handleSubmit, 
-    formState: { errors } 
-  } = useForm<SignupFormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema)
   });
 
   const onSubmit = async (data: SignupFormData) => {
     try {
-      setError('');
       await signUp(data.email, data.password, data.fullName);
       navigate('/friends');
     } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'An unexpected error occurred during signup';
-      setError(errorMessage);
+      console.error('Signup error:', error);
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
       setError('');
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
+      console.log('Signed up with Google, result:', result);
       navigate('/friends');
     } catch (error) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : 'Failed to sign in with Google';
-      setError(errorMessage);
+      console.error('Google sign in error:', error);
+      setError('Failed to sign in with Google. Please try again.');
     }
   };
 
   const handleFacebookSignIn = async () => {
     try {
       setError('');
-      await signInWithFacebook();
+      const result = await signInWithFacebook();
+      console.log('Signed up with Facebook, result:', result);
       navigate('/friends');
     } catch (error) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : 'Failed to sign in with Facebook';
-      setError(errorMessage);
+      console.error('Facebook sign in error:', error);
+      setError('Failed to sign in with Facebook. Please try again.');
     }
   };
 
@@ -77,9 +69,9 @@ export function SignForm() {
         </p>
       </div>
 
-      {(error || authError) && (
+      {error && (
         <div className="p-3 text-sm text-red-500 bg-red-100 rounded-md">
-          {error || authError}
+          {error}
         </div>
       )}
 
@@ -91,7 +83,7 @@ export function SignForm() {
             type="text" 
             placeholder="John Doe" 
             {...register('fullName')}
-            disabled={loading}
+            disabled={isSubmitting}
           />
           {errors.fullName && (
             <p className="text-red-500 text-sm">{errors.fullName?.message}</p>
@@ -105,7 +97,7 @@ export function SignForm() {
             type="email" 
             placeholder="m@example.com" 
             {...register('email')}
-            disabled={loading}
+            disabled={isSubmitting}
           />
           {errors.email && (
             <p className="text-red-500 text-sm">{errors.email.message}</p>
@@ -120,7 +112,7 @@ export function SignForm() {
             id="password" 
             type="password" 
             {...register('password')}
-            disabled={loading}
+            disabled={isSubmitting}
           />
           {errors.password && (
             <p className="text-red-500 text-sm">{errors.password.message}</p>
@@ -130,15 +122,15 @@ export function SignForm() {
         <Button 
           type="submit" 
           className="w-full"
-          disabled={loading}
+          disabled={isSubmitting}
         >
-          {loading ? 'Creating Account...' : 'Create Account'}
+          {isSubmitting ? 'Creating Account...' : 'Create Account'}
         </Button>
         
         <SocialAuthButtons
           onGoogleClick={handleGoogleSignIn}
           onFacebookClick={handleFacebookSignIn}
-          disabled={loading}
+          disabled={isSubmitting}
         />
       </div>
 
