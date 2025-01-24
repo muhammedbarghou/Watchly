@@ -33,7 +33,7 @@ const routes: RouteConfig[] = [
   { path: '/rooms/:id', element: <RoomPage />, isPrivate: true },
   { path: '/chat', element: <ChatPage />, isPrivate: true },
   { path: '/settings', element: <SettingsPage />, isPrivate: true },
-  { path: '*', element: <NotFoundPage />, isPrivate: false }, // Catch-all route for 404
+  { path: '*', element: <NotFoundPage />, isPrivate: false }, 
 ];
 
 function App() {
@@ -42,14 +42,13 @@ function App() {
 
   const initializeAuthMemoized = useCallback(async () => {
     await dispatch(initializeAuth());
-    setIsAuthInitialized(true); // Set auth initialization to true
+    setIsAuthInitialized(true); 
   }, [dispatch]);
 
   useEffect(() => {
     initializeAuthMemoized();
   }, [initializeAuthMemoized]);
 
-  // Show a loading state while initializing auth
   if (!isAuthInitialized) {
     return <div className="h-screen flex justify-center items-center bg-black">
     <div className="w-full gap-x-2 flex justify-center items-center">
@@ -62,9 +61,8 @@ function App() {
       <div
         className="w-5 h-5 bg-[#e85d04] rounded-full animate-bounce"
       ></div>
-      <p className='text-white'>Tip : sometimes you may have to refresh the page so you can enter the room</p>
-
     </div>
+
   </div>;
   }
 
