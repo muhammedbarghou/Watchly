@@ -23,7 +23,6 @@ export function PrivateRoute({ children }: PrivateRouteProps) {
           className="w-5 h-5 bg-[#e85d04] rounded-full animate-bounce"
         ></div>
       </div>
-      <p className='text-white'>Tip : sometimes you may have to refresh the page so you can enter the room</p>
     </div>
     </>; 
   }

@@ -8,8 +8,6 @@ import sidebg from "@/assets/pexels-tima-miroshnichenko-7991182.jpg";
 import { createRoomAsync } from '@/slices/roomSlice'; 
 import { AppDispatch, RootState } from '@/store/Store';
 import { useNavigate } from 'react-router-dom';
-import { addDoc, collection } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 
 export function CreateRoomCard() {
@@ -28,8 +26,6 @@ export function CreateRoomCard() {
   const [videoUrl, setVideoUrl] = useState('');
   const [password, setPassword] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
-
-
 
   const generateId = () => {
     const newId = Math.floor(Math.random() * 100000000).toString();
@@ -68,11 +64,10 @@ export function CreateRoomCard() {
     };
 
     try {
-      const docRef = await addDoc(collection(db, 'rooms'), roomData);
-      
-      await dispatch(createRoomAsync(roomData)).unwrap();
-
-      navigate(`/rooms/${docRef.id}`, { state: { videoUrl } });
+      const room = await dispatch(createRoomAsync(roomData)).unwrap();
+      if (room?.id) {
+        navigate(`/rooms/${room.id}`, { state: { videoUrl } });
+      }
     } catch (err: any) {
       console.error('Failed to create room:', err);
       setSubmitError(err.message || 'An error occurred while creating the room. Please try again.');
