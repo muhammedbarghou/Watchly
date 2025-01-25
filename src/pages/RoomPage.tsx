@@ -1,53 +1,47 @@
-import { useEffect, useState } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout/MainLayout';
 import { VideoPlayer } from '../components/room/VideoPlayer';
 import { ChatPanel } from '../components/room/ChatPanel';
-import { useAppSelector } from '@/hooks/use-room';
-import { RootState } from '@/store/Store';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+
+// Define the structure of the room details and 
+interface RoomDetails {
+  name: string;
+  videoUrl: string;
+  password: string;
+  id: string;
+}
+
+interface Message {
+  id: string;
+  username: string;
+  message: string;
+  timestamp: Date;
+}
 
 export function RoomPage() {
-  const { id } = useParams<{ id: string }>();
-  const location = useLocation();
-  const { videoUrl: urlFromState } = location.state || { videoUrl: '' }; // Get video URL from state
+  const { roomId } = useParams();
+  const navigate = useNavigate();
 
-  const room = useAppSelector((state: RootState) =>
-    state.room.rooms.find((room) => room.id === id)
-  );
-
-  const [roomKey, setRoomKey] = useState<string | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string>(urlFromState || ''); // Use video URL from state or Firestore
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [roomDetails, setRoomDetails] = useState<RoomDetails | null>(null);
 
   useEffect(() => {
-    const fetchRoomData = async () => {
-      if (id) {
-        try {
-          const roomDoc = await getDoc(doc(db, 'rooms', id));
-          if (roomDoc.exists()) {
-            const roomData = roomDoc.data();
-            console.log('Room data fetched:', roomData); // Debugging log
-            setRoomKey(roomData.key || 'No key available'); // Set the room key with fallback
-            setVideoUrl(roomData.videoUrl || urlFromState || ''); // Use Firestore video URL or fallback to state
-          } else {
-            setError('Room document not found in Firestore.');
-          }
-        } catch (err) {
-          setError('Failed to fetch room data.');
-          console.error('Error fetching room data:', err);
-        } finally {
-          setLoading(false);
-        }
+    const storedRoomDetails = localStorage.getItem('roomDetails');
+    if (storedRoomDetails) {
+      const parsedDetails = JSON.parse(storedRoomDetails);
+      if (parsedDetails.id !== roomId) {
+        navigate('/error');
+        return;
       }
-    };
+      setRoomDetails(parsedDetails);
+    } else {
+      navigate('/error');
+    }
+  }, [roomId, navigate]);
 
-    fetchRoomData();
-  }, [id, urlFromState]);
+  console.log('Decoded Video URL:', roomDetails?.videoUrl); // Debug the URL
 
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       username: 'John',
@@ -63,7 +57,7 @@ export function RoomPage() {
   ]);
 
   const handleSendMessage = (message: string) => {
-    const newMessage = {
+    const newMessage: Message = {
       id: Date.now().toString(),
       username: 'You',
       message,
@@ -72,41 +66,23 @@ export function RoomPage() {
     setMessages((prev) => [...prev, newMessage]);
   };
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <div className="flex justify-center items-center h-full">
-          <p className="text-muted-foreground">Loading room data...</p>
-        </div>
-      </MainLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <MainLayout>
-        <div className="flex justify-center items-center h-full">
-          <p className="text-red-500">{error}</p>
-        </div>
-      </MainLayout>
-    );
-  }
-
   return (
     <MainLayout>
-      <div className="flex h-[calc(100vh-64px)]"> {/* Subtract the height of the header (64px) */}
-        {/* Video Player Section */}
+      <div className="flex h-[calc(100vh-64px)]">
         <div className="flex-1 flex flex-col h-full">
           <div className="flex-1 bg-black">
-            <VideoPlayer url={videoUrl} />
+            <VideoPlayer url={roomDetails?.videoUrl || ''} />
           </div>
           <div className="p-4 dark:bg-netflix-black">
-            <h1 className="text-xl font-bold dark:text-white">{room?.name || 'Room'}</h1>
-            <p className="text-muted-foreground">Room Key: {roomKey || 'Loading...'}</p>
+            <h1 className="text-xl font-bold dark:text-white">
+              Room: {roomDetails?.name || 'Unnamed Room'}
+            </h1>
+            <p className="text-muted-foreground">
+              Room Key: {roomDetails?.password || 'No Password'}
+            </p>
           </div>
         </div>
 
-        {/* Chat Panel Section */}
         <div className="w-96 h-full dark:bg-netflix-black border-l border-netflix-gray">
           <ChatPanel
             messages={messages}
