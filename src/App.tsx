@@ -30,7 +30,7 @@ const routes: RouteConfig[] = [
   { path: '/friends', element: <FriendsPage />, isPrivate: true },
   { path: '/join', element: <JoinRoomCard />, isPrivate: true },
   { path: '/create', element: <CreateRoomCard />, isPrivate: true },
-  { path: '/rooms/:roomId', element: <RoomPage />, isPrivate: true },
+  { path: '/rooms/:id', element: <RoomPage />, isPrivate: true },
   { path: '/chat', element: <ChatPage />, isPrivate: true },
   { path: '/settings', element: <SettingsPage />, isPrivate: true },
   { path: '*', element: <NotFoundPage />, isPrivate: false }, 

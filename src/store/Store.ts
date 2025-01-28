@@ -1,24 +1,17 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
-import roomReducer from '@/slices/roomSlice';
 import authReducer from '@/contexts/AuthContext';
 
 export const store = configureStore({
   reducer: {
-    room: roomReducer,
     auth: authReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        // Ignore these field paths in all actions
         ignoredActionPaths: [
-          'payload.createdAt', 
-          'payload.user.createdAt', 
-          'payload.userProfile.createdAt'
         ],
         ignoredPaths: [
-          'room.rooms.createdAt', 
           'auth.userProfile.createdAt'
         ],
       },
