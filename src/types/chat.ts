@@ -4,6 +4,7 @@ export interface Message {
     content: string;
     time: string;
     timestamp: number;
+    
 }
 
 export interface Chat {
