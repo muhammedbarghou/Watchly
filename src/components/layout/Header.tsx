@@ -1,6 +1,5 @@
 import { Menu } from 'lucide-react';
 import { NotificationDropdown } from '../notifications/NotificationDropdown';
-import { UserDropdown } from '../user/UserDropdown';
 import { Button } from '../ui/button';
 import Logo from "@/assets/logo.png";
 import Logo2 from "@/assets/Logo2.png";
@@ -27,7 +26,6 @@ export function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
         <div className="flex items-center gap-4">
           <ThemeToggle />
           <NotificationDropdown />
-          <UserDropdown />
         </div>
       </div>
     </header>

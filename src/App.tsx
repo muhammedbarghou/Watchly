@@ -17,6 +17,7 @@ import ErrorBoundary from './components/auth/ErrorBoundary';
 import { NotFoundPage } from './pages/NotFoundPage'; 
 import {TermsOfServices} from './pages/TermsOfServices';
 import FriendsPage from './pages/FriendsPage';
+import FriendsList from './components/friends/FriendsList';
 
 interface RouteConfig {
   path: string;
@@ -31,6 +32,7 @@ const routes: RouteConfig[] = [
   { path: '/reset-password', element: <ResetPasswordPage />, isPrivate: false },
   { path: '/hub', element: <Hub />, isPrivate: true },
   {path: '/friends', element: <FriendsPage />, isPrivate: true},
+  {path: '/friends-list', element: <FriendsList />, isPrivate: true},
   { path: '/join', element: <JoinRoomCard />, isPrivate: true },
   { path: '/create', element: <CreateRoomCard />, isPrivate: true },
   { path: '/rooms/:id', element: <RoomPage />, isPrivate: true },
