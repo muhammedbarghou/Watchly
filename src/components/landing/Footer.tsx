@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { InView } from '@/components/ui/in-view';
 
 
 const footerLinks = {
@@ -11,13 +10,7 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <InView
-          variants={{
-            hidden: { opacity: 0, y: 100, filter: 'blur(4px)' },
-            visible: { opacity: 1, y: 0, filter: 'blur(0px)' },
-          }}
-          viewOptions={{ margin: '0px 0px -200px 0px' }}
-          transition={{ duration: 0.3, ease: 'easeInOut' }}>
+
     <footer className="bg-black py-12">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -47,6 +40,5 @@ export function Footer() {
         </div>
       </div>
     </footer>
-    </InView>
   );
 }
