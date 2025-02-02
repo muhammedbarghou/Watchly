@@ -5,17 +5,19 @@ import { LandingNavbar } from '../components/landing/LandingNavbar';
 import { FeatureSection } from '../components/landing/FeatureSection';
 import { Footer } from '../components/landing/Footer';
 import { InView } from '@/components/ui/in-view';
+import { TextEffect } from '@/components/ui/text-effect';
+
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-netflix-black">
       <LandingNavbar />
       
       {/* Hero Section */}
       <div
         className="relative h-screen flex items-center justify-center text-center"
         style={{
-          backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url(/api/placeholder/1920/1080)',
+          backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url(https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?auto=format&fit=crop&q=80/api/placeholder/1920/1080)',
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
@@ -31,9 +33,10 @@ export function LandingPage() {
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
               Watch Together, Anywhere
             </h1>
-            <p className="text-xl md:text-2xl text-gray-200 mb-8">
+            <TextEffect preset='fade-in-blur' speedReveal={1.1} speedSegment={0.3} className='text-xl text-gray-300 mb-8 max-w-2xl mx-auto'>
               Join millions of people watching their favorite content together. Share moments, react in real-time.
-            </p>
+            </TextEffect>
+      
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" className="bg-netflix-red hover:bg-netflix-red/90" asChild>
                 <Link to="/signup">
@@ -41,15 +44,14 @@ export function LandingPage() {
                   Get Started
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10" asChild>
+              <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10 hover:text-white" asChild>
                 <Link to="/login">Sign In</Link>
               </Button>
             </div>
           </div>
         </InView>
 
-        {/* Gradient Overlay at bottom of hero */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-zinc-950 to-transparent" />
+        
       </div>
 
       {/* Features Section */}
@@ -88,7 +90,7 @@ export function LandingPage() {
         }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
       >
-        <div className="py-24 bg-zinc-950">
+        <div className="py-24">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-16">
               What Our Users Say
