@@ -15,6 +15,7 @@ import { CreateRoomCard } from '@/components/rooms/CreateRoomDialog';
 import { JoinRoomCard } from './components/rooms/JoinRoomDialog'; 
 import ErrorBoundary from './components/auth/ErrorBoundary'; 
 import { NotFoundPage } from './pages/NotFoundPage'; 
+import {TermsOfServices} from './pages/TermsOfServices';
 
 interface RouteConfig {
   path: string;
@@ -33,6 +34,7 @@ const routes: RouteConfig[] = [
   { path: '/rooms/:id', element: <RoomPage />, isPrivate: true },
   { path: '/chat', element: <ChatPage />, isPrivate: true },
   { path: '/settings', element: <SettingsPage />, isPrivate: true },
+  {path : '/terms-of-services', element: <TermsOfServices />, isPrivate: false},
   { path: '*', element: <NotFoundPage />, isPrivate: false }, 
 ];
 

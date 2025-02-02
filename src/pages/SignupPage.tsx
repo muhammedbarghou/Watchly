@@ -1,6 +1,5 @@
 import { SignForm } from "@/components/auth/signp-form";
-import logo from '@/assets/LogoLini.png';
-import bg from '@/assets/bg-3.jpeg'
+import logo from '@/assets/logo.png';
 
 
 export  function SignupPage() {
@@ -9,10 +8,9 @@ export  function SignupPage() {
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex justify-center gap-2 md:justify-start ">
           <a href="/" className="flex items-center gap-2 font-medium">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary ">
+            <div className="flex items-center justify-center rounded-md ">
               <img src={logo} className="h-6" alt="" />
             </div>
-            <span className="text-white">Watchly</span>
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">
@@ -23,9 +21,9 @@ export  function SignupPage() {
       </div>
       <div className="relative hidden bg-muted lg:block">
         <img
-          src={bg}
+          src="https://images.pexels.com/photos/7991182/pexels-photo-7991182.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
           alt="Image"
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+          className="absolute inset-0 h-full w-full object-cover "
         />
       </div>
     </div>

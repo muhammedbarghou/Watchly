@@ -84,6 +84,7 @@ export function SignForm() {
             placeholder="John Doe" 
             {...register('fullName')}
             disabled={isSubmitting}
+            className="text-white"
           />
           {errors.fullName && (
             <p className="text-red-500 text-sm">{errors.fullName?.message}</p>
@@ -98,6 +99,8 @@ export function SignForm() {
             placeholder="m@example.com" 
             {...register('email')}
             disabled={isSubmitting}
+            className="text-white"
+
           />
           {errors.email && (
             <p className="text-red-500 text-sm">{errors.email.message}</p>
@@ -110,15 +113,42 @@ export function SignForm() {
           </div>
           <Input 
             id="password" 
-            type="password" 
+            type="password"
+            placeholder="********"
             {...register('password')}
             disabled={isSubmitting}
+            className="text-white"
+
           />
           {errors.password && (
             <p className="text-red-500 text-sm">{errors.password.message}</p>
           )}
         </div>
 
+        <div className="grid gap-2">
+          <div className="flex items-center">
+            <Label htmlFor="confirmPassword" className="text-white">Confirm Password</Label>
+          </div>
+          <Input 
+            id="confirmPassword" 
+            type="password"
+            placeholder="********"
+            disabled={isSubmitting}
+            className="text-white"
+
+          />
+        </div>
+        <div className="text-white text-sm">
+          By clicking the button below, you agree to our{' '}
+          <a href="/terms-of-services" className="underline underline-offset-2 text-netflix-red">
+            Terms of Service
+          </a>{' '}
+          and{' '}
+          <a href="/terms-of-services" className="underline underline-offset-2 text-netflix-red">
+            Privacy Policy
+          </a>
+          .
+        </div>
         <Button 
           type="submit" 
           className="w-full"
