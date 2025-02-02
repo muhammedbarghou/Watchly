@@ -6,7 +6,7 @@ import { PrivateRoute } from './components/auth/PrivateRoute';
 import { LandingPage } from './pages/LandingPage'; 
 import { LoginPage } from './pages/LoginPage'; 
 import { SignupPage } from './pages/SignupPage'; 
-import { FriendsPage } from './pages/FriendsPage'; 
+import { Hub } from './pages/HubPage'; 
 import { RoomPage } from './pages/RoomPage'; 
 import { SettingsPage } from './pages/SettingsPage'; 
 import { ResetPasswordPage } from './pages/ResetPassword'; 
@@ -16,6 +16,7 @@ import { JoinRoomCard } from './components/rooms/JoinRoomDialog';
 import ErrorBoundary from './components/auth/ErrorBoundary'; 
 import { NotFoundPage } from './pages/NotFoundPage'; 
 import {TermsOfServices} from './pages/TermsOfServices';
+import FriendsPage from './pages/FriendsPage';
 
 interface RouteConfig {
   path: string;
@@ -28,7 +29,8 @@ const routes: RouteConfig[] = [
   { path: '/login', element: <LoginPage />, isPrivate: false },
   { path: '/signup', element: <SignupPage />, isPrivate: false },
   { path: '/reset-password', element: <ResetPasswordPage />, isPrivate: false },
-  { path: '/friends', element: <FriendsPage />, isPrivate: true },
+  { path: '/hub', element: <Hub />, isPrivate: true },
+  {path: '/friends', element: <FriendsPage />, isPrivate: true},
   { path: '/join', element: <JoinRoomCard />, isPrivate: true },
   { path: '/create', element: <CreateRoomCard />, isPrivate: true },
   { path: '/rooms/:id', element: <RoomPage />, isPrivate: true },

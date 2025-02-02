@@ -12,11 +12,17 @@ import { useAuth } from '@/hooks/use-auth'
 import { SocialAuthButtons } from './SocialAuthButtons'
 import { setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
+import { AlertCircle, Eye, EyeOff } from 'lucide-react'
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters long"),
-})
+  email: z.string()
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address'),
+  password: z.string()
+    .min(1, 'Password is required')
+    .min(6, 'Password must be at least 6 characters'),
+});
 
 interface LoginFormData {
   email: string
@@ -31,58 +37,44 @@ export function LoginForm({
   const { signInWithEmail, signInWithGoogle, signInWithFacebook, loading, error } = useAuth()
   const [authError, setAuthError] = useState<string | null>(null)
   const [rememberMe, setRememberMe] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+
   const { 
     register, 
     handleSubmit, 
-    formState: { errors } 
+    formState: { errors, dirtyFields } 
   } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema)
+    resolver: zodResolver(loginSchema),
+    mode: 'onChange'
   })
+
+  const handleSocialSignIn = async (provider: 'google' | 'facebook') => {
+    try {
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence)
+      
+      setAuthError(null)
+      const signInMethod = provider === 'google' ? signInWithGoogle : signInWithFacebook;
+      await signInMethod();
+      navigate('/hub')
+    } catch (err: any) {
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : `Failed to sign in with ${provider}`
+      setAuthError(errorMessage)
+    }
+  }
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      // Set persistence based on Remember Me checkbox
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence)
       
       setAuthError(null)
       await signInWithEmail(data.email, data.password)
       navigate('/friends')
-    } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
+    } catch (err: any) {
+      const errorMessage = err instanceof Error 
+        ? err.message 
         : 'An unexpected error occurred during login'
-      setAuthError(errorMessage)
-    }
-  }
-
-  const handleGoogleSignIn = async () => {
-    try {
-      // Set persistence based on Remember Me checkbox
-      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence)
-      
-      setAuthError(null)
-      await signInWithGoogle()
-      navigate('/friends')
-    } catch (error) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : 'Failed to sign in with Google'
-      setAuthError(errorMessage)
-    }
-  }
-
-  const handleFacebookSignIn = async () => {
-    try {
-      // Set persistence based on Remember Me checkbox
-      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence)
-      
-      setAuthError(null)
-      await signInWithFacebook()
-      navigate('/friends')
-    } catch (error) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : 'Failed to sign in with Facebook'
       setAuthError(errorMessage)
     }
   }
@@ -101,9 +93,10 @@ export function LoginForm({
       </div>
       
       {(authError || error) && (
-        <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded-md">
-          {authError || error}
-        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{authError || error}</AlertDescription>
+        </Alert>
       )}
 
       <div className="grid gap-6">
@@ -112,11 +105,17 @@ export function LoginForm({
           <Input 
             id="email" 
             type="email" 
-            placeholder="example@example.com" 
+            placeholder="m@example.com" 
             {...register('email')}
             disabled={loading}
+            className={`text-white ${errors.email ? 'border-red-500' : dirtyFields.email ? 'border-green-500' : ''}`}
           />
-          {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
+          {errors.email && (
+            <p className="text-red-500 text-sm flex items-center gap-1">
+              <AlertCircle className="h-4 w-4" />
+              {errors.email.message}
+            </p>
+          )}
         </div>
         
         <div className="grid gap-2">
@@ -126,17 +125,32 @@ export function LoginForm({
               href="/reset-password"
               className="ml-auto text-sm underline-offset-4 hover:underline text-netflix-red"
             >
-              Forgot your password?
+              Forgot password?
             </a>
           </div>
-          <Input 
-            id="password" 
-            type="password" 
-            placeholder="Password" 
-            {...register('password')}
-            disabled={loading}
-          />
-          {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
+          <div className="relative">
+            <Input 
+              id="password" 
+              type={showPassword ? "text" : "password"}
+              placeholder="********" 
+              {...register('password')}
+              disabled={loading}
+              className={`text-white pr-10 ${errors.password ? 'border-red-500' : dirtyFields.password ? 'border-green-500' : ''}`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          {errors.password && (
+            <p className="text-red-500 text-sm flex items-center gap-1">
+              <AlertCircle className="h-4 w-4" />
+              {errors.password.message}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center space-x-2">
@@ -146,27 +160,32 @@ export function LoginForm({
             onCheckedChange={(checked) => setRememberMe(!!checked)}
             disabled={loading}
           />
-          <Label htmlFor="rememberMe" className="text-white">Remember me</Label>
+          <Label 
+            htmlFor="rememberMe" 
+            className="text-white text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Keep me signed in
+          </Label>
         </div>
         
         <Button 
           type="submit" 
-          className="w-full" 
+          className="w-full bg-netflix-red hover:bg-netflix-red/90" 
           disabled={loading}
         >
-          {loading ? 'Logging in...' : 'Login'}
+          {loading ? 'Signing in...' : 'Sign In'}
         </Button>
         
         <SocialAuthButtons
-          onGoogleClick={handleGoogleSignIn}
-          onFacebookClick={handleFacebookSignIn}
+          onGoogleClick={() => handleSocialSignIn('google')}
+          onFacebookClick={() => handleSocialSignIn('facebook')}
           disabled={loading}
         />
       </div>
       
       <div className="text-center text-sm text-white">
         Don&apos;t have an account?{" "}
-        <a href="/signup" className="underline underline-offset-4 text-netflix-red">
+        <a href="/signup" className="underline underline-offset-4 text-netflix-red hover:text-netflix-red/80">
           Sign up
         </a>
       </div>

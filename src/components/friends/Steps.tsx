@@ -1,53 +1,57 @@
-import * as React from "react"
-
-import { Card, CardContent } from "@/components/ui/card"
 import {
   Carousel,
   CarouselContent,
+  CarouselNavigation,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from "@/components/ui/carousel"
+} from '@/components/ui/carousel';
 
 export function Steps() {
-  const [api, setApi] = React.useState<CarouselApi>()
-  const [current, setCurrent] = React.useState(0)
-  const [count, setCount] = React.useState(0)
-
-  React.useEffect(() => {
-    if (!api) {
-      return
-    }
-
-    setCount(api.scrollSnapList().length)
-    setCurrent(api.selectedScrollSnap() + 1)
-
-    api.on("select", () => {
-      setCurrent(api.selectedScrollSnap() + 1)
-    })
-  }, [api])
-
   return (
-    <div className="mx-auto max-w-xs">
-      <Carousel setApi={setApi} className="w-full max-w-xs">
-        <CarouselContent>
-          {Array.from({ length: 5 }).map((_, index) => (
-            <CarouselItem key={index}>
-              <Card>
-                <CardContent className="flex aspect-square items-center justify-center p-6">
-                  <span className="text-4xl font-semibold">{index + 1}</span>
-                </CardContent>
-              </Card>
+      <div className='relative w-full'>
+        <Carousel>
+          <CarouselContent className='-ml-4'>
+            <CarouselItem className='basis-1/3 pl-4'>
+              <div className='flex aspect-square items-center justify-center border border-zinc-200 dark:border-zinc-800'>
+                1
+              </div>
             </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
-      </Carousel>
-      <div className="py-2 text-center text-sm text-muted-foreground">
-        Slide {current} of {count}
+            <CarouselItem className='basis-1/3 pl-4'>
+              <div className='flex aspect-square items-center justify-center border border-zinc-200 dark:border-zinc-800'>
+                2
+              </div>
+            </CarouselItem>
+            <CarouselItem className='basis-1/3 pl-4'>
+              <div className='flex aspect-square items-center justify-center border border-zinc-200 dark:border-zinc-800'>
+                3
+              </div>
+            </CarouselItem>
+            <CarouselItem className='basis-1/3 pl-4'>
+              <div className='flex aspect-square items-center justify-center border border-zinc-200 dark:border-zinc-800'>
+                4
+              </div>
+            </CarouselItem>
+            <CarouselItem className='basis-1/3 pl-4'>
+              <div className='flex aspect-square items-center justify-center border border-zinc-200 dark:border-zinc-800'>
+                5
+              </div>
+            </CarouselItem>
+            <CarouselItem className='basis-1/3 pl-4'>
+              <div className='flex aspect-square items-center justify-center border border-zinc-200 dark:border-zinc-800'>
+                6
+              </div>
+            </CarouselItem>
+            <CarouselItem className='basis-1/3 pl-4'>
+              <div className='flex aspect-square items-center justify-center border border-zinc-200 dark:border-zinc-800'>
+                7
+              </div>
+            </CarouselItem>
+          </CarouselContent>
+          <CarouselNavigation
+            className='absolute -bottom-20 left-auto top-auto w-full justify-end gap-2'
+            classNameButton='bg-zinc-800 *:stroke-zinc-50 dark:bg-zinc-200 dark:*:stroke-zinc-800'
+            alwaysShow
+          />
+        </Carousel>
       </div>
-    </div>
-  )
+  );
 }

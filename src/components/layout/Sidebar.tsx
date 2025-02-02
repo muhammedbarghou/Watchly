@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Video, Settings, MessageCircle, Plus, LogIn } from 'lucide-react';
+import { Home, Video, Settings, MessageCircle, Plus, LogIn,Users} from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useState } from 'react';
 
@@ -8,7 +8,7 @@ export function Sidebar({ isOpen }: { isOpen: boolean }) {
   const [isRoomsOpen, setIsRoomsOpen] = useState(false);
 
   const links = [
-    { to: '/friends', icon: Home, label: 'Home' },
+    { to: '/hub', icon: Home, label: 'Home' },
     { 
       label: 'Rooms', 
       icon: Video, 
@@ -17,8 +17,9 @@ export function Sidebar({ isOpen }: { isOpen: boolean }) {
         { to: '/join', icon: LogIn, label: 'Join Rooms' },
       ] 
     },
-    { to: '/settings', icon: Settings, label: 'Settings' },
+    { to: '/friends', icon: Users, label: 'Friends' },
     { to: '/chat', icon: MessageCircle, label: 'Chat' },
+    { to: '/settings', icon: Settings, label: 'Settings' },
   ];
 
   return (
