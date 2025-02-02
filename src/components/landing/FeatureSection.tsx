@@ -1,5 +1,6 @@
-import React from 'react';
 import { Tv, MessageCircle, Users, Globe } from 'lucide-react';
+import { InView } from '@/components/ui/in-view';
+
 
 const features = [
   {
@@ -26,6 +27,14 @@ const features = [
 
 export function FeatureSection() {
   return (
+    <InView
+    variants={{
+      hidden: { opacity: 0, y: 100, filter: 'blur(4px)' },
+      visible: { opacity: 1, y: 0, filter: 'blur(0px)' },
+    }}
+    viewOptions={{ margin: '0px 0px -200px 0px' }}
+    transition={{ duration: 0.3, ease: 'easeInOut' }}
+    >
     <div className="py-24 bg-netflix-black">
       <div className="container mx-auto px-4">
         <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-16">
@@ -52,5 +61,6 @@ export function FeatureSection() {
         </div>
       </div>
     </div>
+    </InView>
   );
 }
