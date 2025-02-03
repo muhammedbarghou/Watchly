@@ -117,7 +117,7 @@ export function Sidebar({ isOpen }: { isOpen: boolean }) {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-background border-r shadow-lg transition-transform duration-200 ease-in-out flex flex-col',
+        'fixed left-0 top-16 h-[calc(100vh-4rem)] w-64  border-r shadow-lg transition-transform duration-200 ease-in-out flex flex-col',
         isOpen ? 'translate-x-0' : '-translate-x-full'
       )}
     >
@@ -188,7 +188,7 @@ export function Sidebar({ isOpen }: { isOpen: boolean }) {
         </div>
       </ScrollArea>
 
-      <footer className="border-t bg-background p-4 space-y-3">
+      <footer className="border-t p-4 space-y-3">
         <Button 
           asChild 
           variant="ghost" 
