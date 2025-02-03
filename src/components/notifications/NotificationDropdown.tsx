@@ -7,13 +7,13 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 
 interface FriendRequest {
-  id: string; // Document ID
+  id: string; 
   recipientId: string;
   senderId: string;
   status: string;
   timestamp: any;
-  senderName?: string; // Added for display
-  senderPhotoURL?: string; // Added for display
+  senderName?: string; 
+  senderPhotoURL?: string; 
 }
 
 export function NotificationDropdown() {
@@ -138,7 +138,7 @@ export function NotificationDropdown() {
       
       <DropdownMenu isOpen={isOpen} onClose={() => setIsOpen(false)} className="w-80">
         <div className="px-4 py-2">
-          <h3 className="font-semibold text-white">Notifications</h3>
+          <h3 className="font-semibold dark:text-white">Notifications</h3>
         </div>
         <div className="max-h-[400px] overflow-y-auto">
           {friendRequests.length > 0 ? (

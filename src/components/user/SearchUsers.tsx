@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { 
   collection,
@@ -31,15 +31,127 @@ interface FriendRequest {
   timestamp: Timestamp;
 }
 
+interface UserCardProps {
+  user: User;
+  isFriend: boolean;
+  isPending: boolean;
+  onAddFriend: (user: User) => Promise<void>;
+  isLoading: boolean;
+}
+
+const UserCard: React.FC<UserCardProps> = ({
+  user,
+  isFriend,
+  isPending,
+  onAddFriend,
+  isLoading
+}) => {
+  const initials = user.displayName
+    ?.split(' ')
+    .map(n => n[0])
+    .join('') || 'U';
+
+  return (
+    <div className="flex items-center gap-2 p-3 cursor-pointer dark:hover:bg-gray-900/50 hover:bg-gray-50 transition-colors border-b dark:border-gray-800 last:border-b-0">
+      <Avatar>
+        <AvatarImage
+          src={user.photoURL || undefined}
+          alt={`${user.displayName} profile picture`}
+        />
+        <AvatarFallback className="dark:bg-gray-800 dark:text-gray-200">
+          {initials}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex flex-col min-w-0">
+        <span className="font-medium dark:text-gray-200 truncate">
+          {user.displayName || 'Anonymous'}
+        </span>
+        <span className="text-sm dark:text-gray-400">
+          #{user.customUID}
+        </span>
+      </div>
+      <div className="ml-auto">
+        {isFriend ? (
+          <span className="text-sm text-gray-400">Friends</span>
+        ) : (
+          <Button 
+            variant="secondary"
+            size="sm"
+            className="text-sm whitespace-nowrap"
+            onClick={() => onAddFriend(user)}
+            disabled={isPending || isLoading}
+          >
+            {isLoading ? 'Sending...' : isPending ? 'Request Sent' : 'Add friend'}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const SearchDropdown: React.FC<{
+  loading: boolean;
+  users: User[];
+  searchQuery: string;
+  onAddFriend: (user: User) => Promise<void>;
+  friends: string[];
+  pendingRequests: string[];
+  sendingRequest: boolean;
+}> = ({
+  loading,
+  users,
+  searchQuery,
+  onAddFriend,
+  friends,
+  pendingRequests,
+  sendingRequest
+}) => {
+  if (loading) {
+    return <div className="p-3 text-sm text-gray-400">Searching...</div>;
+  }
+
+  if (users.length > 0) {
+    return (
+      <>
+        {users.map((user) => (
+          <UserCard
+            key={user.uid}
+            user={user}
+            isFriend={friends.includes(user.uid)}
+            isPending={pendingRequests.includes(user.uid)}
+            onAddFriend={onAddFriend}
+            isLoading={sendingRequest}
+          />
+        ))}
+      </>
+    );
+  }
+
+  if (searchQuery.length > 0) {
+    return (
+      <div className="p-3 text-sm text-gray-400">
+        No user found with this friend code
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 text-sm text-gray-400">
+      Enter a friend code to search
+    </div>
+  );
+};
+
 const SearchComponent = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [friends, setFriends] = useState<string[]>([]); // Array of friend UIDs
+  const [friends, setFriends] = useState<string[]>([]);
   const [sendingRequest, setSendingRequest] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
   const { currentUser } = useAuth();
   const db = getFirestore();
 
@@ -48,20 +160,18 @@ const SearchComponent = () => {
       if (!currentUser?.uid) return;
       
       try {
-        // Fetch current user's friends list
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
+        
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          console.log('User data:', userData); // Debugging: Log user data
-
-          // Ensure the friends array contains UIDs
           const friendsArray = userData.friends || [];
-          const friendUids = friendsArray.map((friend: any) => friend.uid); // Extract UIDs
+          const friendUids = Array.isArray(friendsArray) 
+            ? friendsArray.map((friend: any) => friend.uid)
+            : [];
           setFriends(friendUids);
         }
 
-        // Fetch pending requests
         const requestsRef = collection(db, 'friendRequests');
         const q = query(
           requestsRef, 
@@ -111,31 +221,34 @@ const SearchComponent = () => {
       }
     };
 
-    const timeoutId = setTimeout(searchUsers, 300);
-    return () => clearTimeout(timeoutId);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(searchUsers, 300);
+    
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
   }, [searchQuery, currentUser]);
 
   const handleAddFriend = async (targetUser: User) => {
     if (!currentUser?.uid) {
-      alert('You must be logged in to send friend requests');
       return;
     }
 
     setSendingRequest(true);
     try {
-      // Create a new friend request document
       const requestId = `${currentUser.uid}_${targetUser.uid}`;
       const requestRef = doc(db, 'friendRequests', requestId);
       
-      // Check if request already exists
       const existingRequest = await getDoc(requestRef);
       if (existingRequest.exists()) {
-        alert('Friend request already sent');
-        setSendingRequest(false);
         return;
       }
 
-      
       const friendRequest: FriendRequest = {
         senderId: currentUser.uid,
         recipientId: targetUser.uid,
@@ -144,40 +257,24 @@ const SearchComponent = () => {
       };
 
       await setDoc(requestRef, friendRequest);
-      
       setPendingRequests(prev => [...prev, targetUser.uid]);
-      alert('Friend request sent successfully!');
     } catch (error) {
       console.error('Error sending friend request:', error);
-      alert('Failed to send friend request. Please try again.');
     } finally {
       setSendingRequest(false);
     }
   };
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(event.target.value);
-  };
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
 
-  const handleInputFocus = () => {
-    setShowDropdown(true);
-  };
-
-  const handleInputBlur = (event: React.FocusEvent<HTMLInputElement>) => {
-    if (!dropdownRef.current?.contains(event.relatedTarget as Node)) {
-      setShowDropdown(false);
-    }
-  };
-
-  const getButtonState = (userId: string) => {
-    if (friends.includes(userId)) {
-      return { text: 'Friends', disabled: true, isFriend: true };
-    }
-    if (pendingRequests.includes(userId)) {
-      return { text: 'Request Sent', disabled: true, isFriend: false };
-    }
-    return { text: 'Add friend', disabled: false, isFriend: false };
-  };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <div className="relative w-80">
@@ -185,71 +282,26 @@ const SearchComponent = () => {
         type="text"
         placeholder="Enter friend code (e.g., 634263)"
         value={searchQuery}
-        onChange={handleInputChange}
-        onFocus={handleInputFocus}
-        onBlur={handleInputBlur}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        onFocus={() => setShowDropdown(true)}
         className="w-full dark:bg-gray-950 dark:border-gray-800 text-black dark:text-gray-200 dark:placeholder:text-gray-500 focus-visible:ring-gray-700"
       />
       {showDropdown && (
-        <div ref={dropdownRef} className="absolute w-full z-50 mt-1">
+        <div 
+          ref={dropdownRef} 
+          className="absolute w-full z-50 mt-1 shadow-lg rounded-md overflow-hidden"
+        >
           <Card className="border-gray-800 dark:bg-gray-950">
             <CardContent className="p-0">
-              {loading ? (
-                <div className="p-3 text-sm text-gray-400">
-                  Searching...
-                </div>
-              ) : filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => {
-                  const buttonState = getButtonState(user.uid);
-
-                  return (
-                    <div
-                      key={user.uid}
-                      className="flex items-center gap-2 p-3 cursor-pointer dark:hover:bg-gray-900 transition-colors border-b dark:border-gray-800 last:border-b-0"
-                    >
-                      <Avatar>
-                        <AvatarImage
-                          src={user.photoURL || undefined}
-                          alt={`${user.displayName} profile picture`}
-                        />
-                        <AvatarFallback className="dark:bg-gray-800 dark:text-gray-200">
-                          {user.displayName?.split(' ').map(n => n[0]).join('') || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-col">
-                        <span className="font-medium dark:text-gray-200">
-                          {user.displayName || 'Anonymous'}
-                        </span>
-                        <span className="text-sm dark:text-gray-400">
-                          #{user.customUID}
-                        </span>
-                      </div>
-                      <div className="ml-auto">
-                        {buttonState.isFriend ? (
-                          <span className="text-sm text-gray-400">Friends</span>
-                        ) : (
-                          <Button 
-                            variant="secondary"
-                            className="text-sm"
-                            onClick={() => handleAddFriend(user)}
-                            disabled={buttonState.disabled || sendingRequest}
-                          >
-                            {sendingRequest && !buttonState.disabled ? 'Sending...' : buttonState.text}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              ) : searchQuery.length > 0 ? (
-                <div className="p-3 text-sm text-gray-400">
-                  No user found with this friend code
-                </div>
-              ) : (
-                <div className="p-3 text-sm text-gray-400">
-                  Enter a friend code to search
-                </div>
-              )}
+              <SearchDropdown
+                loading={loading}
+                users={filteredUsers}
+                searchQuery={searchQuery}
+                onAddFriend={handleAddFriend}
+                friends={friends}
+                pendingRequests={pendingRequests}
+                sendingRequest={sendingRequest}
+              />
             </CardContent>
           </Card>
         </div>
