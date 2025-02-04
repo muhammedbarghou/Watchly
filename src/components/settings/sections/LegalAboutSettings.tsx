@@ -1,149 +1,196 @@
 import { useState } from 'react';
-import { Cookie, Shield, Book, CheckCircle2, Info } from 'lucide-react';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { Cookie, Shield, Book, CheckCircle2, Info, ChevronRight, LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import React from 'react';
 
-const legalDocuments = {
+interface LegalDocument {
+  title: string;
+  icon: LucideIcon;
+  content: string;
+}
+
+type LegalDocuments = {
+  [K in 'terms' | 'privacy' | 'cookies']: LegalDocument;
+};
+
+const legalDocuments: LegalDocuments = {
   terms: {
     title: 'Terms of Service',
-    content: `Last updated: January 15, 2024
-
-This Terms of Service agreement ("Agreement") governs your access to and use of Watchly's services. By using our services, you agree to be bound by these terms.
-
-1. Acceptance of Terms
-By accessing or using the Service, you agree to be bound by these Terms. If you disagree with any part of the terms, you may not access the Service.
-
-2. Description of Service
-Watchly provides a platform for synchronized video watching and social interaction...`
+    icon: Book,
+    content: `Last updated: January 15, 2024...`
   },
   privacy: {
     title: 'Privacy Policy',
-    content: `Last updated: January 15, 2024
-
-This Privacy Policy describes how Watchly ("we", "our", or "us") collects, uses, and shares your personal information when you use our service.
-
-1. Information Collection
-We collect information that you provide directly to us when you:
-- Create an account
-- Use our services
-- Contact us for support...`
+    icon: Shield,
+    content: `Last updated: January 15, 2024...`
   },
   cookies: {
     title: 'Cookie Policy',
-    content: `Last updated: January 15, 2024
-
-This Cookie Policy explains how Watchly uses cookies and similar technologies to recognize you when you visit our platform.
-
-1. What are cookies?
-Cookies are small pieces of text used to store information on web browsers...`
+    icon: Cookie,
+    content: `Last updated: January 15, 2024...`
   }
 };
 
-export function LegalAboutSettings() {
-  const [activeDocument, setActiveDocument] = useState<keyof typeof legalDocuments | null>(null);
+const fadeIn: Variants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -20 }
+};
+
+const buttonHover: Variants = {
+  rest: { scale: 1, backgroundColor: 'var(--secondary)' },
+  hover: { 
+    scale: 1.02,
+    backgroundColor: 'var(--secondary-hover)',
+    transition: { duration: 0.2 }
+  }
+};
+
+export function LegalAboutSettings(): JSX.Element {
+  const [activeDocument, setActiveDocument] = useState<keyof LegalDocuments | null>(null);
   const version = "1.0.0";
   const buildNumber = "2024.01.19.1";
   const isUpToDate = true;
 
-  const openDocument = (doc: keyof typeof legalDocuments) => {
-    setActiveDocument(doc);
-  };
+  const openDocument = (doc: keyof LegalDocuments): void => setActiveDocument(doc);
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Legal Information</CardTitle>
-          <CardDescription>
-            Review our terms, privacy policy, and other legal documents
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Button 
-            variant="secondary" 
-            className="w-full justify-start"
-            onClick={() => openDocument('terms')}
-          >
-            <Book className="w-4 h-4 mr-2" />
-            Terms of Service
-          </Button>
-          <Button 
-            variant="secondary" 
-            className="w-full justify-start"
-            onClick={() => openDocument('privacy')}
-          >
-            <Shield className="w-4 h-4 mr-2" />
-            Privacy Policy
-          </Button>
-          <Button 
-            variant="secondary" 
-            className="w-full justify-start"
-            onClick={() => openDocument('cookies')}
-          >
-            <Cookie className="w-4 h-4 mr-2" />
-            Cookie Policy
-          </Button>
-        </CardContent>
-      </Card>
+    <motion.div 
+      className="space-y-6"
+      initial="initial"
+      animate="animate"
+      variants={{
+        initial: { opacity: 0 },
+        animate: { 
+          opacity: 1,
+          transition: { staggerChildren: 0.1 }
+        }
+      }}
+    >
+      <motion.div variants={fadeIn}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold">Legal Information</CardTitle>
+            <CardDescription className="text-base">
+              Review our terms, privacy policy, and other legal documents
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {(Object.entries(legalDocuments) as [keyof LegalDocuments, LegalDocument][]).map(([key, doc]) => (
+              <motion.div key={key} variants={buttonHover} initial="rest" whileHover="hover">
+                <Button 
+                  variant="secondary" 
+                  className="w-full justify-between group text-base"
+                  onClick={() => openDocument(key)}
+                >
+                  <div className="flex items-center">
+                    <doc.icon className="w-5 h-5 mr-3" />
+                    {doc.title}
+                  </div>
+                  <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </motion.div>
+            ))}
+          </CardContent>
+        </Card>
+      </motion.div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>About Watchly</CardTitle>
-          <CardDescription>
-            Application information and version details
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h4 className="text-lg font-semibold">Watchly</h4>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm text-muted-foreground">Version {version}</p>
-                  <p className="text-xs text-muted-foreground">Build {buildNumber}</p>
+      <motion.div variants={fadeIn}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold">About Watchly</CardTitle>
+            <CardDescription className="text-base">
+              Application information and version details
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <motion.div 
+              className="space-y-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <h4 className="text-xl font-bold">Watchly</h4>
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline" className="text-sm">v{version}</Badge>
+                    <Badge variant="outline" className="text-sm">Build {buildNumber}</Badge>
+                  </div>
                 </div>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {isUpToDate ? (
+                    <Badge variant="default" className="flex items-center gap-2 py-2 px-3">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Up to date
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="flex items-center gap-2 py-2 px-3">
+                      <Info className="w-4 h-4" />
+                      Update available
+                    </Badge>
+                  )}
+                </motion.div>
               </div>
-              {isUpToDate ? (
-                <Badge variant="default" className="flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" />
-                  Up to date
-                </Badge>
-              ) : (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <Info className="w-3 h-3" />
-                  Update available
-                </Badge>
-              )}
-            </div>
-            <div className="pt-4 border-t">
-              <p className="text-sm text-muted-foreground">
+              
+              <Separator />
+              
+              <motion.p 
+                className="text-sm text-muted-foreground"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
                 © 2024 Watchly. All rights reserved.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              </motion.p>
+            </motion.div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-      <Dialog open={!!activeDocument} onOpenChange={() => setActiveDocument(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {activeDocument && legalDocuments[activeDocument].title}
-            </DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[60vh]">
-            <div className="space-y-4 p-4">
-              <p className="whitespace-pre-line">
-                {activeDocument && legalDocuments[activeDocument].content}
-              </p>
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-    </div>
+      <AnimatePresence>
+        {activeDocument && (
+          <Dialog open={!!activeDocument} onOpenChange={() => setActiveDocument(null)}>
+            <DialogContent className="max-w-2xl">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+              >
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-xl">
+                    {activeDocument && (
+                      <>
+                        {legalDocuments[activeDocument].icon && (
+                          React.createElement(legalDocuments[activeDocument].icon, { className: "w-5 h-5" })
+                        )}
+                        {legalDocuments[activeDocument].title}
+                      </>
+                    )}
+                  </DialogTitle>
+                </DialogHeader>
+                <ScrollArea className="max-h-[60vh]">
+                  <div className="space-y-4 p-4">
+                    <p className="whitespace-pre-line leading-relaxed">
+                      {activeDocument && legalDocuments[activeDocument].content}
+                    </p>
+                  </div>
+                </ScrollArea>
+              </motion.div>
+            </DialogContent>
+          </Dialog>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
