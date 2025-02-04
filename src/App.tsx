@@ -18,6 +18,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import {TermsOfServices} from './pages/TermsOfServices';
 import FriendsPage from './pages/FriendsPage';
 import FriendsList from './components/friends/FriendsList';
+import Loader from './components/Loader';
 
 interface RouteConfig {
   path: string;
@@ -56,20 +57,7 @@ function App() {
   }, [initializeAuthMemoized]);
 
   if (!isAuthInitialized) {
-    return <div className="h-screen flex justify-center items-center bg-black">
-    <div className="w-full gap-x-2 flex justify-center items-center">
-      <div
-        className="w-5 bg-[#d00000] h-5 rounded-full animate-bounce"
-      ></div>
-      <div
-        className="w-5 h-5 bg-[#dc2f02] rounded-full animate-bounce"
-      ></div>
-      <div
-        className="w-5 h-5 bg-[#e85d04] rounded-full animate-bounce"
-      ></div>
-    </div>
-
-  </div>;
+    return <Loader/>;
   }
 
   return (
