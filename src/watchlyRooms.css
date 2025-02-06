@@ -1,0 +1,96 @@
+/* General Styles */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: black;
+    color: white;
+    font-family: Arial, sans-serif;
+  }
+  
+  /* Container */
+  .container {
+    display: flex;
+    min-height: 100vh;
+  }
+  
+  /* Sidebar */
+  .sidebar {
+    width: 20%;
+    background-color: black;
+    padding: 20px;
+  }
+  
+  .logo {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+  }
+  
+  .highlight {
+    color: red;
+  }
+  
+  .nav-item {
+    padding: 10px;
+    cursor: pointer;
+    color: white;
+  }
+  
+  .nav-item:hover, .nav-item.active {
+    background-color: red;
+    border-radius: 5px;
+  }
+  
+  /* Main Content */
+  .main-content {
+    width: 80%;
+    padding: 40px;
+  }
+  
+  /* Forms Container */
+  .forms-container {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  /* Form Box */
+  .form-box {
+    width: 45%;
+    padding: 20px;
+    border: 2px solid red;
+    border-radius: 5px;
+  }
+  
+  h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+  }
+  
+  /* Input Fields */
+  .input-field {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid red;
+    background-color: black;
+    color: white;
+    border-radius: 3px;
+    outline: none;
+  }
+  
+  /* Button */
+  .btn {
+    width: 100%;
+    padding: 10px;
+    background-color: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 3px;
+  }
+  
+  .btn:hover {
+    background-color: darkred;
+  }
+  
