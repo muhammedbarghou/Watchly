@@ -82,7 +82,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             }
           )}
         >
-          <div className="h-full p-4 md:p-6">
+          <div className="h-full p-4 md:p-6 overflow-y-auto scroll-smooth">
             {children}
           </div>
         </main>
