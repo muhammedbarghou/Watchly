@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Bell, Mail, Loader } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { db } from '@/lib/firebase'; 
@@ -20,7 +21,8 @@ interface NotificationPreference {
 }
 
 export function NotificationSettings() {
-  const { currentUser } = useAuth(); // Assuming you have an auth context
+  const { currentUser } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -29,60 +31,96 @@ export function NotificationSettings() {
   useEffect(() => {
     const fetchNotificationSettings = async () => {
       if (currentUser) {
-        const userRef = doc(db, 'users', currentUser.uid);
-        const userSnap = await getDoc(userRef);
+        try {
+          const userRef = doc(db, 'users', currentUser.uid);
+          const userSnap = await getDoc(userRef);
 
-        if (userSnap.exists()) {
-          const userData = userSnap.data();
-          if (userData.notificationSettings) {
-            setNotifications(userData.notificationSettings);
-          } else {
-            const defaultSettings = [
-              {
-                id: 'room-invitations',
-                title: 'Room invitations',
-                description: 'Receive email updates when you\'re invited to join a room',
-                enabled: true,
-                category: 'email' as 'email'
-              },
-              {
-                id: 'chat-messages',
-                title: 'Chat messages',
-                description: 'Get notified about new messages in your conversations',
-                enabled: false,
-                category: 'email' as 'email'
-              },
-              {
-                id: 'account-activity',
-                title: 'Account activity',
-                description: 'Stay informed about important account-related updates and security alerts',
-                enabled: true,
-                category: 'email' as 'email'
-              },
-              {
-                id: 'room-activity',
-                title: 'Room activity',
-                description: 'Get instant notifications when there\'s activity in your rooms',
-                enabled: true,
-                category: 'push' as 'push'
-              },
-              {
-                id: 'friend-requests',
-                title: 'Friend requests',
-                description: 'Be notified when someone sends you a friend request',
-                enabled: true,
-                category: 'push' as 'push'
-              }
-            ];
-            setNotifications(defaultSettings);
-            await setDoc(userRef, { notificationSettings: defaultSettings }, { merge: true });
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            if (userData.notificationSettings) {
+              setNotifications(userData.notificationSettings);
+            } else {
+              const defaultSettings = [
+                {
+                  id: 'room-invitations',
+                  title: 'Room invitations',
+                  description: 'Receive email updates when you\'re invited to join a room',
+                  enabled: true,
+                  category: 'email' as 'email'
+                },
+                {
+                  id: 'chat-messages',
+                  title: 'Chat messages',
+                  description: 'Get notified about new messages in your conversations',
+                  enabled: false,
+                  category: 'email' as 'email'
+                },
+                {
+                  id: 'account-activity',
+                  title: 'Account activity',
+                  description: 'Stay informed about important account-related updates and security alerts',
+                  enabled: true,
+                  category: 'email' as 'email'
+                },
+                {
+                  id: 'room-activity',
+                  title: 'Room activity',
+                  description: 'Get instant notifications when there\'s activity in your rooms',
+                  enabled: true,
+                  category: 'push' as 'push'
+                },
+                {
+                  id: 'friend-requests',
+                  title: 'Friend requests',
+                  description: 'Be notified when someone sends you a friend request',
+                  enabled: true,
+                  category: 'push' as 'push'
+                }
+              ];
+              setNotifications(defaultSettings);
+              await setDoc(userRef, { notificationSettings: defaultSettings }, { merge: true });
+            }
           }
+        } catch (error) {
+          console.error('Failed to fetch notification settings:', error);
+        } finally {
+          setLoading(false);
         }
       }
     };
 
     fetchNotificationSettings();
   }, [currentUser]);
+
+  if (loading) {
+    return (
+      <motion.div 
+        className="space-y-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-8 w-40" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center gap-4">
+              <Skeleton className="w-20 h-20 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-[200px]" />
+                <Skeleton className="h-4 w-[150px]" />
+              </div>
+            </div>
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
 
   const handleToggle = (id: string) => {
     setNotifications(prev =>

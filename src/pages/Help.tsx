@@ -64,7 +64,7 @@ function Help  ()  {
               className="max-w-xl mx-auto mt-4 text-base leading-relaxed text-gray-500 dark:text-white"
               variants={itemVariants}
             >
-              Amet minim mollit non deserunt ullamco est sit aliqua dolor do amet sint. Velit officia consequat duis.
+              We are here to help and answer any question you might have. We look forward to hearing from
             </motion.p>
           </motion.div>
 
@@ -83,9 +83,9 @@ function Help  ()  {
                   <Card>
                     <CardContent className="p-6 flex flex-col items-center">
                       {info.icon}
-                      <p className="mt-6 text-lg font-medium text-gray-50">{info.primary}</p>
+                      <p className="mt-6 text-lg font-medium dark:text-gray-50">{info.primary}</p>
                       {info.secondary && (
-                        <p className="mt-1 text-lg font-medium text-gray-100">{info.secondary}</p>
+                        <p className="mt-1 text-lg font-medium dark:text-gray-100">{info.secondary}</p>
                       )}
                     </CardContent>
                   </Card>

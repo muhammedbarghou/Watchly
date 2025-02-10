@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessageSquare, Bug, ExternalLink, Send, Search, BookOpen, ArrowRight, HelpCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -9,6 +9,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, setDoc, collection, addDoc } from 'firebase/firestore';
+import { useAuth } from '@/hooks/use-auth';
 
 interface FAQ {
   id: string;
@@ -18,34 +21,21 @@ interface FAQ {
   helpful?: boolean;
 }
 
-const faqs: FAQ[] = [
-  {
-    id: 'create-room',
-    question: "How do I create a watch room?",
-    answer: "Click the 'Create Room' button on the Rooms page, enter a name and video URL, then invite your friends. You can customize room settings like privacy and chat preferences before creating the room.",
-    category: 'general'
-  },
-  {
-    id: 'video-support',
-    question: "What video platforms are supported?",
-    answer: "You can watch content from YouTube, Vimeo, Twitch, and other major streaming platforms that allow embedding. Some premium content may have restrictions based on the provider's policies.",
-    category: 'technical'
-  },
-  {
-    id: 'invite-friends',
-    question: "How do I invite friends?",
-    answer: "Share your room's unique link or send invites directly through the app. You can also generate temporary guest links or set up recurring watch sessions with saved guest lists.",
-    category: 'general'
-  },
-  {
-    id: 'account-settings',
-    question: "How do I change my account settings?",
-    answer: "Navigate to Settings from your profile menu. You can update your profile information, notification preferences, and privacy settings from there.",
-    category: 'account'
-  }
-];
+interface Feedback {
+  message: string;
+  createdAt: Date;
+  userId?: string;
+}
+
+interface BugReport {
+  description: string;
+  createdAt: Date;
+  userId?: string;
+  status: 'open' | 'in-progress' | 'resolved';
+}
 
 export function HelpSupportSettings() {
+  const { currentUser } = useAuth();
   const [feedback, setFeedback] = useState('');
   const [bugReport, setBugReport] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,11 +44,68 @@ export function HelpSupportSettings() {
   const [showSupportDialog, setShowSupportDialog] = useState(false);
   const [showBugDialog, setShowBugDialog] = useState(false);
   const [expandedFAQ, setExpandedFAQ] = useState<string | undefined>(undefined);
-  const [faqList, setFaqList] = useState(faqs);
+  const [faqList, setFaqList] = useState<FAQ[]>([]);
+  const [isLoadingFAQs, setIsLoadingFAQs] = useState(true);
+
+  useEffect(() => {
+    const fetchFAQs = async () => {
+      try {
+        const docRef = doc(db, 'content', 'help-support');
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          setFaqList(docSnap.data().faqs || []);
+        } else {
+          const defaultFAQs = [
+            {
+              id: 'create-room',
+              question: "How do I create a watch room?",
+              answer: "Click the 'Create Room' button on the Rooms page, enter a name and video URL, then invite your friends. You can customize room settings like privacy and chat preferences before creating the room.",
+              category: 'general' as const
+            },
+            {
+              id: 'video-support',
+              question: "What video platforms are supported?",
+              answer: "You can watch content from YouTube, Vimeo, Twitch, and other major streaming platforms that allow embedding. Some premium content may have restrictions based on the provider's policies.",
+              category: 'technical' as const
+            },
+            {
+              id: 'invite-friends',
+              question: "How do I invite friends?",
+              answer: "Share your room's unique link or send invites directly through the app. You can also generate temporary guest links or set up recurring watch sessions with saved guest lists.",
+              category: 'general' as const
+            },
+            {
+              id: 'account-settings',
+              question: "How do I change my account settings?",
+              answer: "Navigate to Settings from your profile menu. You can update your profile information, notification preferences, and privacy settings from there.",
+              category: 'account' as const
+            }
+          ];
+          await setDoc(docRef, { faqs: defaultFAQs });
+          setFaqList(defaultFAQs);
+        }
+      } catch (error) {
+        console.error('Error fetching FAQs:', error);
+      } finally {
+        setIsLoadingFAQs(false);
+      }
+    };
+
+    fetchFAQs();
+  }, []);
 
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      if (!feedback.trim()) return;
+
+      await addDoc(collection(db, 'feedback'), {
+        message: feedback,
+        createdAt: new Date(),
+        userId: currentUser?.uid
+      });
+
       setFeedback('');
       showTemporarySuccess('Thank you for your feedback! We appreciate your input.');
     } catch (error) {
@@ -68,11 +115,35 @@ export function HelpSupportSettings() {
 
   const handleBugReportSubmit = async () => {
     try {
+      if (!bugReport.trim()) return;
+
+      await addDoc(collection(db, 'bugReports'), {
+        description: bugReport,
+        createdAt: new Date(),
+        userId: currentUser?.uid,
+        status: 'open' as const
+      });
+
       setShowBugDialog(false);
       setBugReport('');
       showTemporarySuccess('Bug report submitted successfully. Our team will investigate.');
     } catch (error) {
       console.error('Failed to submit bug report:', error);
+    }
+  };
+
+  const handleFAQHelpful = async (id: string, helpful: boolean) => {
+    try {
+      const faqRef = doc(db, 'content', 'help-support');
+      const updatedFAQs = faqList.map(faq => 
+        faq.id === id ? { ...faq, helpful } : faq
+      );
+      
+      await setDoc(faqRef, { faqs: updatedFAQs }, { merge: true });
+      setFaqList(updatedFAQs);
+      showTemporarySuccess('Thank you for your feedback!');
+    } catch (error) {
+      console.error('Error updating FAQ:', error);
     }
   };
 
@@ -82,19 +153,18 @@ export function HelpSupportSettings() {
     setTimeout(() => setShowSuccessMessage(false), 3000);
   };
 
-  const handleFAQHelpful = (id: string, helpful: boolean) => {
-    setFaqList(prev => 
-      prev.map(faq => 
-        faq.id === id ? { ...faq, helpful } : faq
-      )
-    );
-    showTemporarySuccess('Thank you for your feedback!');
-  };
-
   const filteredFAQs = faqList.filter(faq => 
     faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
     faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (isLoadingFAQs) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p>Loading help content...</p>
+      </div>
+    );
+  }
 
   return (
     <motion.div 

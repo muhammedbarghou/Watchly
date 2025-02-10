@@ -30,8 +30,8 @@ export function SettingsLayout({ children, tabs, activeTab, onTabChange }: Setti
               "flex items-center gap-2 px-4 py-3 text-sm rounded-lg text-left transition-all",
               "hover:shadow-lg group relative overflow-hidden",
               activeTab === tab.value
-                ? "bg-red-600 text-white shadow-red-500/20"
-                : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                ? "bg-netflix-red text-white shadow-red-500/20"
+                : "text-gray-2900 hover:bg-netflix-gray hover:text-white"
             )}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -68,7 +68,7 @@ export function SettingsLayout({ children, tabs, activeTab, onTabChange }: Setti
             <ChevronDown className="w-4 h-4 opacity-60" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="bottom" className="h-[50vh] bg-gray-900 border-gray-800">
+        <SheetContent side="bottom" className="h-[50vh] bg-netflix-black border-gray-800">
           <nav className="flex flex-col gap-1 mt-4">
             {tabs.map((tab) => (
               <motion.button
@@ -103,9 +103,8 @@ export function SettingsLayout({ children, tabs, activeTab, onTabChange }: Setti
       <div className="flex flex-col md:flex-row gap-6">
         <MobileNav />
         <DesktopNav />
-        
         <motion.div 
-          className="flex-1 min-h-[50vh] rounded-xl bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 p-6"
+          className="flex-1 min-h-[50vh] rounded-xl backdrop-blur-sm "
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}

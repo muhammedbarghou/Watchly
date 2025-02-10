@@ -15,6 +15,7 @@ import { Loader2, CheckCircle2, Shield, Mail, Key } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+// Zod schema for form validation
 const formSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
@@ -39,6 +40,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+// Animation variants
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
@@ -62,6 +64,7 @@ export function AccountSettings(): JSX.Element {
     }
   });
 
+  // Fetch user data on mount
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setUser(user);
@@ -80,17 +83,20 @@ export function AccountSettings(): JSX.Element {
     return () => unsubscribe();
   }, [form]);
 
+  // Handle form submission
   const onSubmit = async (data: FormData) => {
     if (!user) return;
     setUpdating(true);
 
     try {
+      // Reauthenticate user
       const credential = EmailAuthProvider.credential(
         user.email!,
         data.currentPassword
       );
       await reauthenticateWithCredential(user, credential);
 
+      // Prepare updates
       const updates = [];
 
       if (data.fullName !== user.displayName) {
@@ -107,14 +113,17 @@ export function AccountSettings(): JSX.Element {
         updates.push(updatePassword(user, data.newPassword));
       }
 
+      // Execute updates
       await Promise.all(updates);
 
+      // Show success toast
       toast({
         title: "Settings updated",
         description: "Your account settings have been updated successfully.",
         duration: 3000,
       });
 
+      // Reset form
       form.reset({
         ...data,
         currentPassword: '',
@@ -122,6 +131,7 @@ export function AccountSettings(): JSX.Element {
         confirmPassword: ''
       });
     } catch (error: any) {
+      // Handle errors
       let message = 'Failed to update profile';
       
       switch (error.code) {
@@ -190,6 +200,7 @@ export function AccountSettings(): JSX.Element {
           }
         }}
       >
+        {/* Profile Information Card */}
         <motion.div variants={fadeInUp}>
           <Card>
             <CardHeader className="space-y-2">
@@ -202,99 +213,101 @@ export function AccountSettings(): JSX.Element {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <motion.div 
-                className="flex items-center gap-4"
+              {/* Avatar and User Info */}
+                <motion.div 
+                className="flex flex-col sm:flex-row items-center gap-4"
                 whileHover={{ scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 300 }}
-              >
+                >
                 <div className="relative">
                   <Avatar className="w-20 h-20 border-2 border-primary">
-                    <AvatarImage src={user?.photoURL ?? ''} alt={user?.displayName ?? 'User'} />
-                    <AvatarFallback className="bg-primary text-xl">
-                      {user?.displayName?.[0].toUpperCase() ?? 'U'}
-                    </AvatarFallback>
+                  <AvatarImage src={user?.photoURL ?? ''} alt={user?.displayName ?? 'User'} />
+                  <AvatarFallback className="bg-primary text-xl">
+                    {user?.displayName?.[0].toUpperCase() ?? 'U'}
+                  </AvatarFallback>
                   </Avatar>
                   <AnimatePresence>
-                    {user?.emailVerified && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
-                        className="absolute bottom-0 right-0"
-                      >
-                        <CheckCircle2 className="w-6 h-6 text-green-500 bg-background rounded-full" />
-                      </motion.div>
-                    )}
+                  {user?.emailVerified && (
+                    <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    className="absolute bottom-0 right-0"
+                    >
+                    <CheckCircle2 className="w-6 h-6 text-green-500 bg-background rounded-full" />
+                    </motion.div>
+                  )}
                   </AnimatePresence>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 text-center sm:text-left">
                   <p className="text-xl font-medium">{user?.displayName || 'User'}</p>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Mail className="w-4 h-4" />
-                    <span>{user?.email}</span>
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className={`text-xs px-2 py-0.5 rounded-full ${
-                        user?.emailVerified 
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-yellow-100 text-yellow-700'
-                      }`}
-                    >
-                      {user?.emailVerified ? 'Verified' : 'Not verified'}
-                    </motion.span>
+                  <div className="flex flex-col sm:flex-row items-center gap-2 text-sm text-muted-foreground">
+                  <Mail className="w-4 h-4" />
+                  <span>{user?.email}</span>
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className={`text-xs px-2 py-0.5 rounded-full ${
+                    user?.emailVerified 
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-yellow-100 text-yellow-700'
+                    }`}
+                  >
+                    {user?.emailVerified ? 'Verified' : 'Not verified'}
+                  </motion.span>
                   </div>
                 </div>
-              </motion.div>
+                </motion.div>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    {...form.register('fullName')}
-                    className="bg-background transition-all focus:ring-2 focus:ring-primary"
-                  />
-                  <AnimatePresence>
-                    {form.formState.errors.fullName && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="text-sm text-destructive"
-                      >
-                        {form.formState.errors.fullName.message}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </div>
+              {/* Full Name Input */}
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  {...form.register('fullName')}
+                  className="bg-background transition-all focus:ring-2 focus:ring-primary"
+                />
+                <AnimatePresence>
+                  {form.formState.errors.fullName && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="text-sm text-destructive"
+                    >
+                      {form.formState.errors.fullName.message}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    {...form.register('email')}
-                    className="bg-background transition-all focus:ring-2 focus:ring-primary"
-                  />
-                  <AnimatePresence>
-                    {form.formState.errors.email && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="text-sm text-destructive"
-                      >
-                        {form.formState.errors.email.message}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </div>
+              {/* Email Input */}
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  {...form.register('email')}
+                  className="bg-background transition-all focus:ring-2 focus:ring-primary"
+                />
+                <AnimatePresence>
+                  {form.formState.errors.email && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="text-sm text-destructive"
+                    >
+                      {form.formState.errors.email.message}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
+        {/* Password Card */}
         <motion.div variants={fadeInUp} className="mt-6">
           <Card>
             <CardHeader className="space-y-2">
@@ -307,32 +320,76 @@ export function AccountSettings(): JSX.Element {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {['currentPassword', 'newPassword', 'confirmPassword'].map((field) => (
-                <div key={field} className="space-y-2">
-                  <Label htmlFor={field}>
-                    {field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}
-                  </Label>
-                  <Input
-                    id={field}
-                    type="password"
-                    {...form.register(field as keyof FormData)}
-                    className="bg-background transition-all focus:ring-2 focus:ring-primary"
-                  />
-                  <AnimatePresence>
-                    {form.formState.errors[field as keyof FormData] && (
-                      <motion.p
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="text-sm text-destructive"
-                      >
-                        {form.formState.errors[field as keyof FormData]?.message}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ))}
+              {/* Current Password Input */}
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current Password</Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  {...form.register('currentPassword')}
+                  className="bg-background transition-all focus:ring-2 focus:ring-primary"
+                />
+                <AnimatePresence>
+                  {form.formState.errors.currentPassword && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="text-sm text-destructive"
+                    >
+                      {form.formState.errors.currentPassword.message}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
 
+              {/* New Password Input */}
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  {...form.register('newPassword')}
+                  className="bg-background transition-all focus:ring-2 focus:ring-primary"
+                />
+                <AnimatePresence>
+                  {form.formState.errors.newPassword && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="text-sm text-destructive"
+                    >
+                      {form.formState.errors.newPassword.message}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Confirm Password Input */}
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  {...form.register('confirmPassword')}
+                  className="bg-background transition-all focus:ring-2 focus:ring-primary"
+                />
+                <AnimatePresence>
+                  {form.formState.errors.confirmPassword && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="text-sm text-destructive"
+                    >
+                      {form.formState.errors.confirmPassword.message}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Password Requirements Alert */}
               {form.watch('newPassword') && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
