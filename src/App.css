@@ -1,0 +1,135 @@
+/* عام */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: black;
+  color: white;
+  text-align: center;
+}
+
+/* الرأس */
+header {
+  padding: 1rem 0;
+}
+
+header h1 {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+header h1 span {
+  color: red;
+}
+
+/* قسم البطل */
+.hero-section {
+  padding: 2rem;
+  text-align: center;
+}
+
+.hero-section h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.hero-section p {
+  color: #ccc;
+  margin-bottom: 2rem;
+}
+
+.hero-section button {
+  padding: 0.8rem 1.5rem;
+  margin: 0 0.5rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.hero-section button:first-of-type {
+  background-color: red;
+  color: white;
+}
+
+.hero-section button:last-of-type {
+  background-color: transparent;
+  color: white;
+  border: 2px solid white;
+}
+
+/* قسم المزايا */
+.features-section {
+  padding: 2rem;
+}
+
+.features-section h2 {
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  padding: 0 1rem;
+}
+
+/* بطاقات المزايا */
+.feature-card {
+  background-color: #1a1a1a;
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+}
+
+.feature-card .icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.feature-card h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.feature-card p {
+  color: #ccc;
+}
+
+/* الفوتر */
+footer {
+  background-color: #111;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #666;
+}
+
+footer .footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+footer h4 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: white;
+}
+
+footer ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+footer ul li {
+  color: #aaa;
+  margin: 0.3rem 0;
+}
+
+footer p {
+  margin-top: 1rem;
+  color: #666;
+}
