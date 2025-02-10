@@ -23,28 +23,23 @@ export function SettingsPage() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  // Get active tab from URL or default to first tab
   const activeTab = searchParams.get('tab') || TABS[0].value;
 
-  // Update URL when tab changes
   const handleTabChange = (value: string) => {
     setIsLoading(true);
     setError(null);
     
-    // Update URL with new tab
     setSearchParams({ tab: value });
 
-    // Simulate loading state for better UX
     setTimeout(() => {
       setIsLoading(false);
     }, 300);
   };
 
-  // Validate tab value from URL
   React.useEffect(() => {
     const isValidTab = TABS.some(tab => tab.value === activeTab);
     if (!isValidTab) {
-      navigate('/settings?tab=account', { replace: true });
+      navigate('/settings-tab=account', { replace: true });
     }
   }, [activeTab, navigate]);
 

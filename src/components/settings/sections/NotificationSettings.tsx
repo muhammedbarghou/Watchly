@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Bell, Mail, Loader } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { db } from '@/lib/firebase'; 
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { useAuth } from '@/hooks/use-auth'
 
 interface NotificationPreference {
   id: string;
@@ -17,49 +20,69 @@ interface NotificationPreference {
 }
 
 export function NotificationSettings() {
+  const { currentUser } = useAuth(); // Assuming you have an auth context
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationPreference[]>([
-    {
-      id: 'room-invitations',
-      title: 'Room invitations',
-      description: 'Receive email updates when youre invited to join a room',
-      enabled: true,
-      category: 'email'
-    },
-    {
-      id: 'chat-messages',
-      title: 'Chat messages',
-      description: 'Get notified about new messages in your conversations',
-      enabled: false,
-      category: 'email'
-    },
-    {
-      id: 'account-activity',
-      title: 'Account activity',
-      description: 'Stay informed about important account-related updates and security alerts',
-      enabled: true,
-      category: 'email'
-    },
-    {
-      id: 'room-activity',
-      title: 'Room activity',
-      description: 'Get instant notifications when theres activity in your rooms',
-      enabled: true,
-      category: 'push'
-    },
-    {
-      id: 'friend-requests',
-      title: 'Friend requests',
-      description: 'Be notified when someone sends you a friend request',
-      enabled: true,
-      category: 'push'
-    }
-  ]);
+  const [notifications, setNotifications] = useState<NotificationPreference[]>([]);
 
-  const emailNotifications = notifications.filter(n => n.category === 'email');
-  const pushNotifications = notifications.filter(n => n.category === 'push');
+  useEffect(() => {
+    const fetchNotificationSettings = async () => {
+      if (currentUser) {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          if (userData.notificationSettings) {
+            setNotifications(userData.notificationSettings);
+          } else {
+            const defaultSettings = [
+              {
+                id: 'room-invitations',
+                title: 'Room invitations',
+                description: 'Receive email updates when you\'re invited to join a room',
+                enabled: true,
+                category: 'email' as 'email'
+              },
+              {
+                id: 'chat-messages',
+                title: 'Chat messages',
+                description: 'Get notified about new messages in your conversations',
+                enabled: false,
+                category: 'email' as 'email'
+              },
+              {
+                id: 'account-activity',
+                title: 'Account activity',
+                description: 'Stay informed about important account-related updates and security alerts',
+                enabled: true,
+                category: 'email' as 'email'
+              },
+              {
+                id: 'room-activity',
+                title: 'Room activity',
+                description: 'Get instant notifications when there\'s activity in your rooms',
+                enabled: true,
+                category: 'push' as 'push'
+              },
+              {
+                id: 'friend-requests',
+                title: 'Friend requests',
+                description: 'Be notified when someone sends you a friend request',
+                enabled: true,
+                category: 'push' as 'push'
+              }
+            ];
+            setNotifications(defaultSettings);
+            await setDoc(userRef, { notificationSettings: defaultSettings }, { merge: true });
+          }
+        }
+      }
+    };
+
+    fetchNotificationSettings();
+  }, [currentUser]);
 
   const handleToggle = (id: string) => {
     setNotifications(prev =>
@@ -75,16 +98,22 @@ export function NotificationSettings() {
   const handleSaveChanges = async () => {
     setIsSaving(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setShowSaveSuccess(true);
-      setHasUnsavedChanges(false);
-      setTimeout(() => setShowSaveSuccess(false), 3000);
+      if (currentUser) {
+        const userRef = doc(db, 'users', currentUser.uid);
+        await setDoc(userRef, { notificationSettings: notifications }, { merge: true });
+        setShowSaveSuccess(true);
+        setHasUnsavedChanges(false);
+        setTimeout(() => setShowSaveSuccess(false), 3000);
+      }
     } catch (error) {
       console.error('Failed to save preferences:', error);
     } finally {
       setIsSaving(false);
     }
   };
+
+  const emailNotifications = notifications.filter(n => n.category === 'email');
+  const pushNotifications = notifications.filter(n => n.category === 'push');
 
   const NotificationSection = ({ 
     title, 
