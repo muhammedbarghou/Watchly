@@ -43,7 +43,7 @@ const navigationLinks: NavigationLink[] = [
     label: 'Friends',
     icon: Users,
     children: [
-      { to: '/friends', icon: UserPlus, label: 'Add Friends' },
+      { to: '/friends', icon: UserPlus, label: 'Friends Activities' },
       { to: '/friends-list', icon: List, label: 'Friend List' },
     ],
   },

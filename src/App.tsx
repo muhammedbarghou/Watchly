@@ -20,6 +20,7 @@ import FriendsPage from './pages/FriendsPage';
 import FriendsList from './components/friends/FriendsList';
 import Loader from './components/Loader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import Help from './pages/Help';
 
 export const ROUTES = {
   HOME: '/',
@@ -35,6 +36,7 @@ export const ROUTES = {
   CHAT: '/chat',
   SETTINGS: '/settings',
   TERMS: '/terms-of-services',
+  HELP: '/help',
 } as const;
 
 type RouteKeys = keyof typeof ROUTES;
@@ -61,6 +63,7 @@ const routes: RouteConfig[] = [
   { path: ROUTES.CHAT, element: <ChatPage />, isPrivate: true, title: 'Chat' },
   { path: ROUTES.SETTINGS, element: <SettingsPage />, isPrivate: true, title: 'Settings' },
   { path: ROUTES.TERMS, element: <TermsOfServices />, isPrivate: false, title: 'Terms of Service' },
+  { path: ROUTES.HELP, element: <Help />, isPrivate: true, title: 'Help'}
 ];
 
 const AppRoutes = () => {

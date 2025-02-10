@@ -19,7 +19,6 @@ interface SettingsLayoutProps {
 export function SettingsLayout({ children, tabs, activeTab, onTabChange }: SettingsLayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
-  // Desktop Navigation
   const DesktopNav = () => (
     <div className="w-64 shrink-0 hidden md:block">
       <nav className="sticky top-4 flex flex-col gap-1 pr-4">
@@ -55,7 +54,6 @@ export function SettingsLayout({ children, tabs, activeTab, onTabChange }: Setti
     </div>
   );
 
-  // Mobile Navigation
   const MobileNav = () => (
     <div className="md:hidden mb-4">
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
