@@ -1,6 +1,5 @@
 import Logo from '@/assets/logo.png'
 import { Link } from 'react-router-dom';
-import LandingBanner from './LandingBanner'
 
 
 export function LandingNavbar() {
@@ -12,7 +11,6 @@ export function LandingNavbar() {
             <img src={Logo} alt="Logo" className="h-8" />
           </Link>
           <div className="flex items-center gap-4">
-          <LandingBanner/>
           </div>
         </div>
       </div>
