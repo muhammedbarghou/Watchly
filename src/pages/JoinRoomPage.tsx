@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { MainLayout } from '../layout/MainLayout';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { MainLayout } from '../components/layout/MainLayout';
 import sidebg from "@/assets/pexels-tima-miroshnichenko-7991182.jpg";
 
 type RoomDetails = {

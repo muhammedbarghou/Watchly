@@ -11,8 +11,8 @@ import { RoomPage } from './pages/RoomPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ResetPasswordPage } from './pages/ResetPassword';
 import { ChatPage } from './pages/ChatPage';
-import { CreateRoomCard } from '@/components/rooms/CreateRoomDialog';
-import { JoinRoomCard } from './components/rooms/JoinRoomDialog';
+import { CreateRoomCard } from '@/pages/CreateRoomPage';
+import { JoinRoomCard } from './pages/JoinRoomPage';
 import ErrorBoundary from './components/auth/ErrorBoundary';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { TermsOfServices } from './pages/TermsOfServices';
@@ -32,7 +32,7 @@ export const ROUTES = {
   FRIENDS_LIST: '/friends-list',
   JOIN_ROOM: '/join',
   CREATE_ROOM: '/create',
-  ROOM: '/rooms/:id',
+  ROOM: '/rooms/:roomId',
   CHAT: '/chat',
   SETTINGS: '/settings',
   TERMS: '/terms-of-services',
