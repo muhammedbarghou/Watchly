@@ -7,34 +7,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { Loader2, Copy, Film, Lock, Eye, EyeOff } from 'lucide-react';
-import sidebg from "@/assets/pexels-tima-miroshnichenko-7991182.jpg";
-
-type RoomDetails = {
-  id: string;
-  name: string;
-  videoUrl: string;
-  password?: string;
-  createdAt: Date;
-};
-
-const YOUTUBE_REGEX = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
+import { Loader2,  Film, Lock, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import roomService from '@/api/roomService';
 
 export function CreateRoomCard() {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [name, setName] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formTouched, setFormTouched] = useState(false);
-  
-  const roomId = useMemo(() => uuidv4(), []);
-
-  const getYoutubeVideoId = (url: string) => {
-    const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-    return match?.[1] || null;
-  };
 
   const validateForm = () => {
     const errors: string[] = [];
@@ -47,14 +32,14 @@ export function CreateRoomCard() {
 
     if (!videoUrl.trim()) {
       errors.push('Please enter a video URL');
-    } else if (!YOUTUBE_REGEX.test(videoUrl)) {
-      errors.push('Please enter a valid YouTube URL');
-    } else if (!getYoutubeVideoId(videoUrl)) {
-      errors.push('Could not extract valid YouTube video ID');
     }
 
     if (password && password.length < 4) {
       errors.push('Password must be at least 4 characters long');
+    }
+
+    if (!currentUser) {
+      errors.push('You must be logged in to create a room');
     }
 
     if (errors.length > 0) {
@@ -64,39 +49,14 @@ export function CreateRoomCard() {
 
     return true;
   };
+    
+  const roomId = useMemo(() => uuidv4(), []);
 
-  const handleCopyRoomId = () => {
-    navigator.clipboard.writeText(roomId);
-    toast.success('Room ID copied to clipboard!');
-  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-
-    if (!validateForm()) {
-      setIsSubmitting(false);
-      return;
-    }
-
-    try {
-      const roomDetails: RoomDetails = {
-        id: roomId,
-        name: name.trim(),
-        videoUrl: videoUrl.trim(),
-        password: password.trim() || undefined,
-        createdAt: new Date(),
-      };
-
-      localStorage.setItem(`room-${roomId}`, JSON.stringify(roomDetails));
-      toast.success('Room created successfully! Redirecting...');
-
-      setTimeout(() => navigate(`/rooms/${roomId}`), 1500);
-    } catch (error) {
-      toast.error('Failed to create room. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    
   };
 
   const formVariants = {
@@ -143,30 +103,6 @@ export function CreateRoomCard() {
             >
               <div className="space-y-4">
                 <motion.div variants={itemVariants}>
-                  <Label htmlFor="room-id">Room ID</Label>
-                  <div className="relative">
-                    <Input
-                      id="room-id"
-                      value={roomId}
-                      readOnly
-                      className="font-mono text-sm pr-10"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-2 top-1/2 -translate-y-1/2"
-                      onClick={handleCopyRoomId}
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Share this ID with your friends
-                  </p>
-                </motion.div>
-
-                <motion.div variants={itemVariants}>
                   <Label htmlFor="room-name">Room Name *</Label>
                   <div className="relative">
                     <Film className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -182,20 +118,15 @@ export function CreateRoomCard() {
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
-                  <Label htmlFor="video-url">YouTube Video URL *</Label>
+                  <Label htmlFor="video-url">Video URL *</Label>
                   <Input
                     id="video-url"
                     type="url"
                     value={videoUrl}
                     onChange={(e) => setVideoUrl(e.target.value)}
-                    placeholder="https://www.youtube.com/watch?v=..."
+                    placeholder="Enter video URL"
                     required
                   />
-                  {videoUrl && getYoutubeVideoId(videoUrl) && (
-                    <p className="text-xs text-green-500 mt-1">
-                      ✓ Valid YouTube URL
-                    </p>
-                  )}
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
@@ -231,7 +162,7 @@ export function CreateRoomCard() {
                 <Button 
                   type="submit" 
                   className="w-full"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !currentUser}
                 >
                   {isSubmitting ? (
                     <>
@@ -242,23 +173,16 @@ export function CreateRoomCard() {
                     'Create Room'
                   )}
                 </Button>
+                {!currentUser && (
+                  <p className="text-sm text-muted-foreground mt-2 text-center">
+                    Please login to create a room
+                  </p>
+                )}
               </motion.div>
             </motion.form>
           </div>
         </motion.section>
 
-        <aside className="hidden lg:block flex-1 relative">
-          <motion.img
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1 }}
-            src={sidebg}
-            alt="People watching movie together"
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent" />
-        </aside>
       </main>
     </MainLayout>
   );
