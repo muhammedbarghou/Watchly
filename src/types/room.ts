@@ -1,45 +1,23 @@
-
-export interface RoomData {
-  name: string;
-  videoUrl: string;
-  password?: string;
-  createdBy: string;
-}
-
-export interface Room extends RoomData {
-  key: ReactNode;
+export interface Room {
   id: string;
-  participants: string[];
-  createdAt: Date;
-}
-
-export interface CreateRoomInput {
   name: string;
+  password: string;
   videoUrl: string;
-  password?: string;
+  currentTime: number;
+  isPlaying: boolean;
+  lastUpdated: number;
+  playbackRate: number;
 }
 
-export interface JoinRoomInput {
+export interface User {
+  id: string;
   roomId: string;
-  password?: string;
-}
-
-export interface RoomState {
-  rooms: Room[];
-  loading: boolean;
-  error: string | null;
-}
-
-export interface RoomParticipant {
-  userId: string;
-  joinedAt: Date;
-}
-
-export interface RoomResponse {
-  id: string;
   name: string;
-  videoUrl: string;
-  createdBy: string;
-  participants: string[];
-  createdAt: string; 
+  lastActive: number;
 }
+
+export type WSMessage = 
+  | { type: 'JOIN'; roomId: string; userId: string }
+  | { type: 'STATE'; roomId: string; state: Partial<Room> }
+  | { type: 'USER_JOINED'; user: User }
+  | { type: 'USER_LEFT'; userId: string };

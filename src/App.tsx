@@ -32,7 +32,7 @@ export const ROUTES = {
   FRIENDS_LIST: '/friends-list',
   JOIN_ROOM: '/join',
   CREATE_ROOM: '/create',
-  ROOM: '/rooms/:roomId',
+  ROOM: '/room/:roomId',
   CHAT: '/chat',
   SETTINGS: '/settings',
   TERMS: '/terms-of-services',

@@ -1,155 +1,115 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import ReactPlayer from 'react-player';
 import { VideoPlayerControls } from './VideoPlayerControls';
 import { useFullscreen } from '../../hooks/use-fullscreen';
 import { ProgressBar } from './ProgressBar';
 import { Loader } from '../ui/loader';
 import { debounce } from 'lodash';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '@/database/Rxdb';
+import { Room, WSMessage } from '@/types/room';
 
 interface VideoPlayerProps {
   url: string;
-  onStateChange?: (state: {
-    currentTime: number;
-    isPlaying: boolean;
-    playbackRate: number;
-  }) => void;
-  initialState?: {
-    currentTime: number;
-    isPlaying: boolean;
-    playbackRate: number;
-  } | null;
+  roomId: string;
+  sendMessage: (msg: WSMessage) => void;
   isController?: boolean;
   allowControl?: boolean;
 }
 
 export function VideoPlayer({ 
-  url, 
-  onStateChange,
-  initialState,
+  url,
+  roomId,
+  sendMessage,
   isController = false,
   allowControl = true 
 }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<ReactPlayer>(null);
-  const [playing, setPlaying] = useState(initialState?.isPlaying ?? true);
   const [muted, setMuted] = useState(true);
   const [volume, setVolume] = useState(1);
-  const [played, setPlayed] = useState(0);
   const [seeking, setSeeking] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [playbackRate, setPlaybackRate] = useState(initialState?.playbackRate ?? 1);
   const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
 
-  // Sync with initial state
-  useEffect(() => {
-    if (initialState && playerRef.current) {
-      setPlaying(initialState.isPlaying);
-      setPlaybackRate(initialState.playbackRate);
-      playerRef.current.seekTo(initialState.currentTime, 'seconds');
-    }
-  }, [initialState]);
+  // Get room state from IndexedDB
+  const room = useLiveQuery(() => db.rooms.get(roomId));
 
-  // Debounced state change handler
-  const debouncedStateChange = useCallback(
-    debounce((state: { currentTime: number; isPlaying: boolean; playbackRate: number }) => {
-      onStateChange?.(state);
+  // Sync player with room state
+  useEffect(() => {
+    if (room && playerRef.current) {
+      playerRef.current.seekTo(room.currentTime, 'seconds');
+      if (room.isPlaying !== playerRef.current.props.playing) {
+        room.isPlaying ? playerRef.current.getInternalPlayer().play() 
+                      : playerRef.current.getInternalPlayer().pause();
+      }
+    }
+  }, [room]);
+
+  // Debounced state update
+  const updateRoomState = useCallback(
+    debounce((state: Partial<Room>) => {
+      if (!allowControl && !isController) return;
+      
+      db.rooms.update(roomId, {
+        ...state,
+        lastUpdated: Date.now()
+      });
+      
+      sendMessage({
+        type: 'STATE',
+        roomId,
+        state
+      });
     }, 500),
-    [onStateChange]
+    [roomId, sendMessage, allowControl, isController]
   );
 
   const handlePlayPause = () => {
-    if (!allowControl && !isController) return;
-    
-    setPlaying((prev) => {
-      const newPlaying = !prev;
-      if (playerRef.current) {
-        debouncedStateChange({
-          currentTime: playerRef.current.getCurrentTime(),
-          isPlaying: newPlaying,
-          playbackRate
-        });
-      }
-      return newPlaying;
-    });
+    const newState = { isPlaying: !room?.isPlaying };
+    updateRoomState(newState);
   };
 
   const handleSeek = (seconds: number) => {
-    if (!allowControl && !isController) return;
-
     const player = playerRef.current;
     if (player) {
       const currentTime = player.getCurrentTime() + seconds;
-      player.seekTo(currentTime, 'seconds');
-      debouncedStateChange({
-        currentTime,
-        isPlaying: playing,
-        playbackRate
-      });
+      updateRoomState({ currentTime });
     }
   };
 
   const handleProgress = (state: { played: number; playedSeconds: number }) => {
-    if (!seeking) {
-      setPlayed(state.played);
-      if (isController || allowControl) {
-        debouncedStateChange({
-          currentTime: state.playedSeconds,
-          isPlaying: playing,
-          playbackRate
-        });
-      }
+    if (!seeking && (isController || allowControl)) {
+      updateRoomState({ 
+        currentTime: state.playedSeconds,
+        isPlaying: room?.isPlaying ?? false
+      });
     }
   };
 
   const handleSeekTo = (value: number) => {
-    if (!allowControl && !isController) return;
-
     const player = playerRef.current;
     if (player) {
-      player.seekTo(value, 'fraction');
-      setPlayed(value);
-      debouncedStateChange({
-        currentTime: value * player.getDuration(),
-        isPlaying: playing,
-        playbackRate
-      });
+      const currentTime = value * player.getDuration();
+      updateRoomState({ currentTime });
     }
   };
 
   const handlePlaybackRateChange = (rate: number) => {
-    if (!allowControl && !isController) return;
-
-    setPlaybackRate(rate);
-    if (playerRef.current) {
-      debouncedStateChange({
-        currentTime: playerRef.current.getCurrentTime(),
-        isPlaying: playing,
-        playbackRate: rate
-      });
-    }
+    updateRoomState({ playbackRate: rate });
   };
 
   const handleReady = () => {
-    console.log('Video is ready to play');
     setLoading(false);
-    
-    // Apply initial state if available
-    if (initialState && playerRef.current) {
-      playerRef.current.seekTo(initialState.currentTime, 'seconds');
+    if (room && playerRef.current) {
+      playerRef.current.seekTo(room.currentTime, 'seconds');
     }
-  };
-
-  const handleError = (error: any) => {
-    console.error('Video playback error:', error);
-    setLoading(false);
   };
 
   // Cleanup debounce on unmount
   useEffect(() => {
-    return () => {
-      debouncedStateChange.cancel();
-    };
-  }, [debouncedStateChange]);
+    return () => updateRoomState.cancel();
+  }, [updateRoomState]);
 
   return (
     <div
@@ -180,30 +140,29 @@ export function VideoPlayer({
         url={url}
         width="100%"
         height="100%"
-        playing={playing}
+        playing={room?.isPlaying ?? false}
         muted={muted}
         volume={volume}
-        playbackRate={playbackRate}
+        playbackRate={room?.playbackRate ?? 1}
         onProgress={handleProgress}
         onReady={handleReady}
-        onError={handleError}
         style={{ backgroundColor: 'black' }}
         controls={false}
       />
 
       <ProgressBar
-        played={played}
+        played={(room?.currentTime || 0) / (playerRef.current?.getDuration() || 1)}
         onSeek={handleSeekTo}
         onSeekStart={() => setSeeking(true)}
         onSeekEnd={() => setSeeking(false)}
       />
 
       <VideoPlayerControls
-        playing={playing}
+        playing={room?.isPlaying ?? false}
         muted={muted}
         fullscreen={isFullscreen}
         volume={volume}
-        playbackRate={playbackRate}
+        playbackRate={room?.playbackRate ?? 1}
         onPlayPause={handlePlayPause}
         onMute={() => setMuted((prev) => !prev)}
         onVolumeChange={setVolume}

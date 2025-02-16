@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { Loader2,  Film, Lock, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Film, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import roomService from '@/api/roomService';
+import { db } from '@/database/Rxdb';
 
 export function CreateRoomCard() {
   const navigate = useNavigate();
@@ -20,6 +20,8 @@ export function CreateRoomCard() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formTouched, setFormTouched] = useState(false);
+
+  const roomId = useMemo(() => uuidv4(), []);
 
   const validateForm = () => {
     const errors: string[] = [];
@@ -49,14 +51,45 @@ export function CreateRoomCard() {
 
     return true;
   };
-    
-  const roomId = useMemo(() => uuidv4(), []);
 
-
-
-const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+
+    try {
+      // Create room in IndexedDB
+      await db.rooms.put({
+        id: roomId,
+        name,
+        videoUrl,
+        password,
+        currentTime: 0,
+        isPlaying: true,
+        playbackRate: 1,
+        lastUpdated: Date.now()
+      });
+
+      // Store room details in localStorage
+      const roomDetails = {
+        id: roomId,
+        name,
+        videoUrl,
+        password
+      };
+      localStorage.setItem('roomDetails', JSON.stringify(roomDetails));
+
+      // Navigate to the new room
+      navigate(`/room/${roomId}`);
+      toast.success('Room created successfully!');
+    } catch (error) {
+      console.error('Error creating room:', error);
+      toast.error('Failed to create room. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const formVariants = {
@@ -182,7 +215,6 @@ const handleSubmit = async (e: React.FormEvent) => {
             </motion.form>
           </div>
         </motion.section>
-
       </main>
     </MainLayout>
   );
