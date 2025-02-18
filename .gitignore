@@ -25,3 +25,7 @@ dist-ssr
 *.sw?
 
 .scannerwork
+
+.vscode
+
+.bolt

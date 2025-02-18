@@ -1,17 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { MainLayout } from '../components/layout/MainLayout';
 import sidebg from "@/assets/pexels-tima-miroshnichenko-7991182.jpg";
 
-type RoomDetails = {
-  id: string;
-  password?: string;
-  // Add other room details as needed
-};
+
 
 export function JoinRoomCard() {
   const navigate = useNavigate();
@@ -23,34 +18,6 @@ export function JoinRoomCard() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    try {
-      if (!roomKey.trim()) {
-        toast.error('Please enter a room key');
-        return;
-      }
-
-      // Check if room exists in localStorage
-      const roomData = localStorage.getItem(`room-${roomKey}`);
-      if (!roomData) {
-        toast.error('Room not found');
-        return;
-      }
-
-      const roomDetails: RoomDetails = JSON.parse(roomData);
-      
-      // Check password if required
-      if (roomDetails.password && roomDetails.password !== password.trim()) {
-        toast.error('Incorrect password');
-        return;
-      }
-
-      toast.success('Joining room...');
-      navigate(`/rooms/${roomKey}`);
-    } catch (error) {
-      toast.error('Failed to join room. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   return (

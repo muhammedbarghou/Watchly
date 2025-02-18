@@ -16,14 +16,11 @@ interface VideoPlayerControlsProps {
   muted: boolean;
   fullscreen: boolean;
   volume: number;
-  playbackRate: number;
   onPlayPause: () => void;
   onMute: () => void;
-  onVolumeChange: (volume: number) => void;
+  onVolumeChange: (value: number) => void;
   onFullscreen: () => void;
   onSeek: (seconds: number) => void;
-  onPlaybackRateChange: (rate: number) => void;
-  disabled: boolean;
 }
 
 export function VideoPlayerControls({

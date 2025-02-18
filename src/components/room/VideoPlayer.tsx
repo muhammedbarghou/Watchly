@@ -1,126 +1,73 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useState } from 'react';
 import ReactPlayer from 'react-player';
 import { VideoPlayerControls } from './VideoPlayerControls';
 import { useFullscreen } from '../../hooks/use-fullscreen';
 import { ProgressBar } from './ProgressBar';
 import { Loader } from '../ui/loader';
-import { debounce } from 'lodash';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/database/Rxdb';
-import { Room, WSMessage } from '@/types/room';
 
 interface VideoPlayerProps {
   url: string;
-  roomId: string;
-  sendMessage: (msg: WSMessage) => void;
-  isController?: boolean;
-  allowControl?: boolean;
+  onProgress?: (state: { played: number; playedSeconds: number }) => void;
+  onPause?: () => void;
+  onPlay?: () => void;
 }
 
-export function VideoPlayer({ 
-  url,
-  roomId,
-  sendMessage,
-  isController = false,
-  allowControl = true 
-}: VideoPlayerProps) {
+export function VideoPlayer({ url, onProgress, onPause, onPlay }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<ReactPlayer>(null);
-  const [muted, setMuted] = useState(true);
+  const [playing, setPlaying] = useState(true);
+  const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(1);
-  const [seeking, setSeeking] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [played, setPlayed] = useState(0); // Track played progress
+  const [seeking, setSeeking] = useState(false); // Track seeking state
+  const [loading, setLoading] = useState(true); // Track loading state
   const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
 
-  // Get room state from IndexedDB
-  const room = useLiveQuery(() => db.rooms.get(roomId));
-
-  // Sync player with room state
-  useEffect(() => {
-    if (room && playerRef.current) {
-      playerRef.current.seekTo(room.currentTime, 'seconds');
-      if (room.isPlaying !== playerRef.current.props.playing) {
-        room.isPlaying ? playerRef.current.getInternalPlayer().play() 
-                      : playerRef.current.getInternalPlayer().pause();
-      }
-    }
-  }, [room]);
-
-  // Debounced state update
-  const updateRoomState = useCallback(
-    debounce((state: Partial<Room>) => {
-      if (!allowControl && !isController) return;
-      
-      db.rooms.update(roomId, {
-        ...state,
-        lastUpdated: Date.now()
-      });
-      
-      sendMessage({
-        type: 'STATE',
-        roomId,
-        state
-      });
-    }, 500),
-    [roomId, sendMessage, allowControl, isController]
-  );
-
   const handlePlayPause = () => {
-    const newState = { isPlaying: !room?.isPlaying };
-    updateRoomState(newState);
+    setPlaying(!playing);
+    playing ? onPause?.() : onPlay?.();
   };
 
   const handleSeek = (seconds: number) => {
     const player = playerRef.current;
     if (player) {
-      const currentTime = player.getCurrentTime() + seconds;
-      updateRoomState({ currentTime });
+      const currentTime = player.getCurrentTime();
+      player.seekTo(currentTime + seconds);
     }
   };
 
   const handleProgress = (state: { played: number; playedSeconds: number }) => {
-    if (!seeking && (isController || allowControl)) {
-      updateRoomState({ 
-        currentTime: state.playedSeconds,
-        isPlaying: room?.isPlaying ?? false
-      });
+    if (!seeking) {
+      setPlayed(state.played);
     }
+    onProgress?.(state);
   };
 
   const handleSeekTo = (value: number) => {
     const player = playerRef.current;
     if (player) {
-      const currentTime = value * player.getDuration();
-      updateRoomState({ currentTime });
+      player.seekTo(value);
+      setPlayed(value);
     }
-  };
-
-  const handlePlaybackRateChange = (rate: number) => {
-    updateRoomState({ playbackRate: rate });
   };
 
   const handleReady = () => {
-    setLoading(false);
-    if (room && playerRef.current) {
-      playerRef.current.seekTo(room.currentTime, 'seconds');
-    }
+    setLoading(false); // Hide loader when video is ready
   };
 
-  // Cleanup debounce on unmount
-  useEffect(() => {
-    return () => updateRoomState.cancel();
-  }, [updateRoomState]);
+  const handleError = (error: any) => {
+    console.error('Video playback error:', error);
+    setLoading(false); // Hide loader on error
+  };
 
   return (
     <div
       ref={containerRef}
       className="relative h-full bg-black overflow-hidden"
-      tabIndex={0}
+      tabIndex={0} // Enable keyboard focus
       onKeyDown={(e) => {
-        if (!allowControl && !isController) return;
-        
+        // Add keyboard shortcuts
         if (e.key === ' ') {
-          e.preventDefault();
           handlePlayPause();
         } else if (e.key === 'ArrowLeft') {
           handleSeek(-10);
@@ -129,54 +76,48 @@ export function VideoPlayer({
         }
       }}
     >
+      {/* Loading Spinner */}
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
           <Loader className="w-12 h-12 text-white" />
         </div>
       )}
 
+      {/* Video Player */}
       <ReactPlayer
         ref={playerRef}
         url={url}
         width="100%"
         height="100%"
-        playing={room?.isPlaying ?? false}
+        playing={playing}
         muted={muted}
         volume={volume}
-        playbackRate={room?.playbackRate ?? 1}
         onProgress={handleProgress}
         onReady={handleReady}
+        onError={handleError}
         style={{ backgroundColor: 'black' }}
-        controls={false}
       />
 
+      {/* Progress Bar */}
       <ProgressBar
-        played={(room?.currentTime || 0) / (playerRef.current?.getDuration() || 1)}
+        played={played}
         onSeek={handleSeekTo}
         onSeekStart={() => setSeeking(true)}
         onSeekEnd={() => setSeeking(false)}
       />
 
+      {/* Video Controls */}
       <VideoPlayerControls
-        playing={room?.isPlaying ?? false}
+        playing={playing}
         muted={muted}
         fullscreen={isFullscreen}
         volume={volume}
-        playbackRate={room?.playbackRate ?? 1}
         onPlayPause={handlePlayPause}
-        onMute={() => setMuted((prev) => !prev)}
+        onMute={() => setMuted(!muted)}
         onVolumeChange={setVolume}
         onFullscreen={toggleFullscreen}
         onSeek={handleSeek}
-        onPlaybackRateChange={handlePlaybackRateChange}
-        disabled={!allowControl && !isController}
       />
-
-      {!allowControl && !isController && (
-        <div className="absolute top-4 left-4 bg-black/80 text-white px-3 py-1 rounded-md text-sm">
-          View Only Mode
-        </div>
-      )}
     </div>
   );
 }
