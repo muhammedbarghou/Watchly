@@ -1,10 +1,11 @@
 image: 
-  name: sonarsource/sonar-scanner-cli:latest
+  name: sonarsource/sonar-scanner-cli:4.7.0  # Try a specific, stable version
   entrypoint: [""]
 
 variables:
   SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
   GIT_DEPTH: "0"
+  SONAR_SCANNER_OPTS: "-Xmx512m"  # Provide explicit memory allocation
 
 stages:
   - build-sonar
@@ -20,10 +21,12 @@ build-sonar:
   
   before_script:
     - echo "Testing connection to SonarQube server at ${SONAR_HOST_URL}"
-    - curl -s -o /dev/null -w "%{http_code}" ${SONAR_HOST_URL} || echo "Connection failed"
+    - curl -I ${SONAR_HOST_URL} || true  # Just see what happens, but continue anyway
+    - echo "Scanner version:"
+    - sonar-scanner --version
     
   script: 
-    - sonar-scanner -X -Dsonar.host.url="${SONAR_HOST_URL}" -Dsonar.login="${SONAR_TOKEN}"
+    - sonar-scanner -X -Dsonar.projectKey="muhammedbarghou_Watchly_1956c35f-69da-4d35-a102-3f9e2d322b82" -Dsonar.host.url="${SONAR_HOST_URL}" -Dsonar.login="${SONAR_TOKEN}"
   
   allow_failure: true
   rules:
