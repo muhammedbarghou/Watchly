@@ -1,151 +1,82 @@
 import { useState, useEffect } from 'react';
-import { Room, CreateRoomDto} from '@/types/room';
+import { Room, CreateRoomDto, JoinRoomDto, VideoStateUpdateDto } from '../types/room';
+import { roomApi } from '../services/api';
 
-export function useRoom(roomId?: string) {
+export const useRoom = (roomKey?: string) => {
   const [room, setRoom] = useState<Room | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!roomId) return;
-
-    const controller = new AbortController();
-    const fetchRoom = async () => {
-      try {
-        const response = await fetch(`/api/rooms/${roomId}`, {
-          signal: controller.signal
-        });
-        
-        if (!response.ok) {
-          throw new Error('Room not found');
-        }
-        
-        const data = await response.json();
-        setRoom(data);
-        setError(null);
-      } catch (err) {
-        console.error('Room fetch error:', err);
-        setError('Failed to load room');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRoom();
-    
-    // Setup WebSocket connection for real-time updates
-    const ws = new WebSocket(`ws://your-websocket-url/rooms/${roomId}`);
-    
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+  const fetchRoom = async (key: string) => {
+    try {
+      setLoading(true);
+      const data = await roomApi.getRoom(key);
       setRoom(data);
-    };
-
-    return () => {
-      controller.abort();
-      ws.close();
-    };
-  }, [roomId]);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch room');
+      setRoom(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const createRoom = async (data: CreateRoomDto) => {
     try {
-      const response = await fetch('/api/rooms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          createdAt: new Date(),
-          participants: [],
-          participantCount: 0,
-          videoState: {
-            currentTime: 0,
-            isPlaying: false,
-            playbackRate: 1,
-            lastUpdatedBy: data.createdBy,
-            lastUpdatedAt: new Date(),
-          },
-          settings: {
-            chatEnabled: true,
-            allowPlaybackControl: true,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create room');
-      }
-
-      return await response.json();
+      setLoading(true);
+      const newRoom = await roomApi.createRoom(data);
+      setRoom(newRoom);
+      setError(null);
+      return newRoom;
     } catch (err) {
-      console.error('Create room error:', err);
-      throw new Error('Failed to create room');
+      setError(err instanceof Error ? err.message : 'Failed to create room');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const joinRoom = async ({ userId, name }: { userId: string; name: string }) => {
-    if (!room) throw new Error('Room not found');
-    if (!userId) throw new Error('User ID is required');
-
+  const joinRoom = async (key: string, data: JoinRoomDto) => {
     try {
-      const response = await fetch(`/api/rooms/${room.key}/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, name }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to join room');
-      }
-
-      const updatedRoom = await response.json();
+      setLoading(true);
+      const updatedRoom = await roomApi.joinRoom(key, data);
       setRoom(updatedRoom);
+      setError(null);
+      return updatedRoom;
     } catch (err) {
-      console.error('Join room error:', err);
-      throw new Error('Failed to join room');
+      setError(err instanceof Error ? err.message : 'Failed to join room');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const updateVideoState = async ({ userId, currentTime, isPlaying }: {
-    userId: string;
-    currentTime: number;
-    isPlaying: boolean;
-  }) => {
-    if (!room) return;
-
+  const leaveRoom = async (key: string, userId: string) => {
     try {
-      await fetch(`/api/rooms/${room.key}/video-state`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, currentTime, isPlaying }),
-      });
+      await roomApi.leaveRoom(key, userId);
+      setRoom(null);
+      setError(null);
     } catch (err) {
-      console.error('Update video state error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to leave room');
+      throw err;
     }
   };
 
-  const updateParticipantActivity = async (userId: string) => {
-    if (!room) return;
-
+  const updateVideoState = async (key: string, data: VideoStateUpdateDto) => {
     try {
-      await fetch(`/api/rooms/${room.key}/participants/${userId}/activity`, {
-        method: 'PUT'
-      });
+      await roomApi.updateVideoState(key, data);
+      setError(null);
     } catch (err) {
-      console.error('Update participant activity error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update video state');
+      throw err;
     }
   };
 
-  const leaveRoom = async (userId: string) => {
-    if (!room) return;
-
-    try {
-      await fetch(`/api/rooms/${room.key}/participants/${userId}`, {
-        method: 'DELETE'
-      });
-    } catch (err) {
-      console.error('Leave room error:', err);
+  useEffect(() => {
+    if (roomKey) {
+      fetchRoom(roomKey);
     }
-  };
+  }, [roomKey]);
 
   return {
     room,
@@ -155,6 +86,6 @@ export function useRoom(roomId?: string) {
     joinRoom,
     leaveRoom,
     updateVideoState,
-    updateParticipantActivity,
+    refreshRoom: roomKey ? () => fetchRoom(roomKey) : undefined,
   };
-}
+};

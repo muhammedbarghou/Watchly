@@ -6,45 +6,41 @@ export interface Participant {
   lastActive: Date;
 }
 
-export interface RoomParticipant {
-  userId: string;
-  name: string;
-  joinedAt: Date;
-  lastActive: Date;
-}
-
 export interface VideoState {
   currentTime: number;
   isPlaying: boolean;
   playbackRate: number;
-  lastUpdatedBy: string;
-  lastUpdatedAt: Date;
+  lastUpdated: Date;
 }
 
 export interface RoomSettings {
-  chatEnabled: boolean;
+  isPrivate: boolean;
+  allowSkip: boolean;
   allowPlaybackControl: boolean;
+  maxParticipants: number;
+  chatEnabled: boolean;
+  autoCleanup: boolean;
 }
 
 export interface Room {
+  _id: string;
   key: string;
   name: string;
-  videoUrl: string;
-  password?: string;
   createdBy: string;
-  createdAt: Date;
-  participants: RoomParticipant[];
+  videoUrl: string;
+  participants: Participant[];
+  status: 'active' | 'paused' | 'closed' | 'archived';
   videoState: VideoState;
   settings: RoomSettings;
   participantCount: number;
 }
 
 export interface CreateRoomDto {
-  key: string;
   name: string;
-  videoUrl: string;
-  password?: string;
   createdBy: string;
+  videoUrl: string;
+  key: string;
+  password?: string;
 }
 
 export interface JoinRoomDto {
