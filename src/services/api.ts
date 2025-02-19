@@ -1,244 +1,52 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios from 'axios';
+import { 
+  Room, 
+  CreateRoomDto, 
+  JoinRoomDto, 
+  VideoStateUpdateDto 
+} from '../types/room';
 
-// Types
-interface Participant {
-  userId: string;
-  role: 'admin' | 'moderator' | 'viewer';
-  joinedAt: Date;
-  lastActive: Date;
-}
+const API_BASE_URL ='http://localhost:5000/api';
 
-interface VideoState {
-  currentTime: number;
-  isPlaying: boolean;
-  lastUpdate: Date;
-  version: number;
-}
-
-interface RoomSettings {
-  maxParticipants: number;
-  allowChat: boolean;
-  allowVolumeControl: boolean;
-  allowSeek: boolean;
-  allowRolePromotion: boolean;
-}
-
-interface Room {
-  name: string;
-  createdBy: string;
-  key: string;
-  videoUrl: string;
-  password?: string;
-  participants: Participant[];
-  status: 'active' | 'inactive' | 'closed';
-  videoState: VideoState;
-  settings: RoomSettings;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface CreateRoomPayload {
-  name: string;
-  createdBy: string;
-  videoUrl: string;
-  key?: string;
-  password?: string;
-  settings?: Partial<RoomSettings>;
-}
-
-interface JoinRoomPayload {
-  userId: string;
-  password?: string;
-}
-
-interface UpdateRoomPayload {
-  userId: string;
-  updates: Partial<{
-    name: string;
-    videoUrl: string;
-    password: string;
-    settings: Partial<RoomSettings>;
-  }>;
-}
-
-interface UpdateRolePayload {
-  adminId: string;
-  targetUserId: string;
-  newRole: 'admin' | 'moderator' | 'viewer';
-}
-
-interface VideoStateUpdatePayload {
-  userId: string;
-  currentTime: number;
-  isPlaying: boolean;
-  version: number;
-}
-
-interface ApiErrorResponse {
-  success: false;
-  message: string;
-  requestId: string;
-  timestamp: string;
-  errors?: string[];
-  field?: string;
-}
-
-interface ApiSuccessResponse<T = any> {
-  success: true;
-  requestId: string;
-  timestamp: string;
-  room?: Room;
-  message?: string;
-  videoState?: VideoState;
-  data?: T;
-}
-
-type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse;
-
-class ApiError extends Error {
-  constructor(
-    public message: string,
-    public status: number,
-    public requestId?: string,
-    public errors?: string[],
-    public field?: string
-  ) {
-    super(message);
-    this.name = 'ApiError';
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
   }
-}
+});
 
-class RoomAPI {
-  private api: AxiosInstance;
-  private lastRequestId?: string;
-
-  constructor(baseURL: string = 'http://localhost:3000/api') {
-    this.api = axios.create({
-      baseURL,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      withCredentials: true, // Enable credentials for CORS
-      timeout: 10000, // 10 second timeout
-    });
-
-    // Request interceptor
-    this.api.interceptors.request.use((config) => {
-      // Track request ID if provided
-      const requestId = crypto.randomUUID();
-      config.headers['X-Request-ID'] = requestId;
-      return config;
-    });
-
-    // Response interceptor
-    this.api.interceptors.response.use(
-      (response) => {
-        // Store request ID from response headers
-        this.lastRequestId = response.headers['x-request-id'];
-        return response;
-      },
-      (error: AxiosError<ApiErrorResponse>) => {
-        if (error.response) {
-          const { data, status } = error.response;
-          throw new ApiError(
-            data.message,
-            status,
-            data.requestId,
-            data.errors,
-            data.field
-          );
-        } else if (error.request) {
-          throw new ApiError(
-            'Network error - no response received',
-            0
-          );
-        } else {
-          throw new ApiError(
-            'Request configuration error',
-            0
-          );
-        }
-      }
-    );
-  }
-
-  /**
-   * Get the request ID from the last API call
-   */
-  getLastRequestId(): string | undefined {
-    return this.lastRequestId;
-  }
-
-  /**
-   * Create a new room
-   */
-  async createRoom(payload: CreateRoomPayload): Promise<ApiResponse<Room>> {
-    const response = await this.api.post('/rooms', payload);
+export const roomApi = {
+  // Create a new room
+  createRoom: async (data: CreateRoomDto): Promise<Room> => {
+    const response = await api.post<Room>('/rooms', data);
     return response.data;
-  }
+  },
 
-  /**
-   * Join an existing room
-   */
-  async joinRoom(roomKey: string, payload: JoinRoomPayload): Promise<ApiResponse<Room>> {
-    const response = await this.api.post(`/rooms/${roomKey}/join`, payload);
+  // Get room details
+  getRoom: async (key: string): Promise<Room> => {
+    const response = await api.get<Room>(`/rooms/${key}`);
     return response.data;
-  }
+  },
 
-  /**
-   * Update room details
-   */
-  async updateRoom(roomKey: string, payload: UpdateRoomPayload): Promise<ApiResponse<Room>> {
-    const response = await this.api.put(`/rooms/${roomKey}`, payload);
+  // Join a room
+  joinRoom: async (key: string, data: JoinRoomDto): Promise<Room> => {
+    const response = await api.post<Room>(`/rooms/${key}/join`, data);
     return response.data;
-  }
+  },
 
-  /**
-   * Update participant role
-   */
-  async updateParticipantRole(roomKey: string, payload: UpdateRolePayload): Promise<ApiResponse> {
-    const response = await this.api.patch(`/rooms/${roomKey}/roles`, payload);
-    return response.data;
-  }
+  // Leave a room
+  leaveRoom: async (key: string, userId: string): Promise<void> => {
+    await api.post(`/rooms/${key}/leave`, { userId });
+  },
 
-  /**
-   * Update video state
-   */
-  async updateVideoState(roomKey: string, payload: VideoStateUpdatePayload): Promise<ApiResponse> {
-    const response = await this.api.put(`/rooms/${roomKey}/video-state`, payload);
-    return response.data;
-  }
+  // Update video state
+  updateVideoState: async (key: string, data: VideoStateUpdateDto): Promise<void> => {
+    await api.patch(`/rooms/${key}/video-state`, data);
+  },
 
-  /**
-   * Leave room
-   */
-  async leaveRoom(roomKey: string, userId: string): Promise<ApiResponse> {
-    const response = await this.api.post(`/rooms/${roomKey}/leave`, { userId });
-    return response.data;
+  // Delete a room
+  deleteRoom: async (key: string, userId: string): Promise<void> => {
+    await api.delete(`/rooms/${key}`, { data: { userId } });
   }
-
-  /**
-   * Delete room
-   */
-  async deleteRoom(roomKey: string, userId: string): Promise<ApiResponse> {
-    const response = await this.api.delete(`/rooms/${roomKey}`, {
-      data: { userId }
-    });
-    return response.data;
-  }
-}
-
-export default RoomAPI;
-export type { 
-  ApiError,
-  ApiResponse,
-  Room,
-  Participant,
-  VideoState,
-  RoomSettings,
-  CreateRoomPayload,
-  JoinRoomPayload,
-  UpdateRoomPayload,
-  UpdateRolePayload,
-  VideoStateUpdatePayload
 };
