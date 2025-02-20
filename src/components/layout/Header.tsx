@@ -1,46 +1,36 @@
-import  { useState } from 'react';
-import { Menu, Search } from 'lucide-react';
-import { NotificationDropdown } from '../notifications/NotificationDropdown';
-import { Button } from '../ui/button';
-import { ThemeToggle } from '../ui/theme-toggle';
-import SearchComponent from '../user/SearchUsers';
-import logo from '../../assets/logo.png';
-import logo2 from '../../assets/Logo2.png';
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Menu, Search } from "lucide-react"
+import { NotificationDropdown } from "../notifications/NotificationDropdown"
+import { Button } from "../ui/button"
+import { ThemeToggle } from "../ui/theme-toggle"
+import SearchComponent from "../user/SearchUsers"
+import logo from "../../assets/logo.png"
+import logo2 from "../../assets/Logo2.png"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
-export function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
+interface HeaderProps {
+  toggleSidebar: () => void
+}
 
+export function Header({ toggleSidebar }: HeaderProps) {
   return (
-    <header className="sticky top-0 dark:bg-netflix-black/95 bg-gray-100/95 backdrop-blur-sm w-full z-50 border-b dark:border-gray-800 border-gray-200">
-      <div className="px-4 h-16 flex items-center justify-between max-w-7xl mx-auto">
+    <header className="sticky top-0 dark:bg-netflix-black/95 bg-white backdrop-blur-sm w-full z-50 border-b dark:border-gray-800 border-gray-200">
+      <div className="px-4 h-16 flex items-center justify-between  mx-auto">
         {/* Left Section */}
         <div className="flex items-center gap-2 sm:gap-4">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="icon"
             onClick={toggleSidebar}
             className="hover:bg-gray-200 dark:hover:bg-gray-800"
+            id="sidebar-button"
           >
             <Menu className="w-5 h-5 dark:text-white text-black" />
           </Button>
-          
+
           {/* Logo Section - Responsive */}
-          <img 
-            src={logo} 
-            alt="Logo" 
-            className="h-6 sm:h-7 hidden dark:block" 
-          />
-          <img 
-            src={logo2}
-            alt="Logo" 
-            className="h-6 sm:h-7 dark:hidden" 
-          />
-          
+          <img src={logo || "/placeholder.svg"} alt="Logo" className="h-6 sm:h-7 hidden dark:block" />
+          <img src={logo2 || "/placeholder.svg"} alt="Logo" className="h-6 sm:h-7 dark:hidden" />
+
           {/* Desktop Search */}
           <div className="hidden md:block">
             <SearchComponent />
@@ -52,11 +42,7 @@ export function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
           {/* Mobile Search Trigger */}
           <Sheet>
             <SheetTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="md:hidden"
-              >
+              <Button variant="ghost" size="icon" className="md:hidden">
                 <Search className="w-5 h-5" />
               </Button>
             </SheetTrigger>
@@ -75,7 +61,8 @@ export function Header({ toggleSidebar }: { toggleSidebar: () => void }) {
         </div>
       </div>
     </header>
-  );
+  )
 }
 
-export default Header;
+export default Header
+
