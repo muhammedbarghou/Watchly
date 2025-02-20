@@ -2,15 +2,12 @@ import { useState, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from "framer-motion";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { 
-  Loader2, Film, Lock, Eye, EyeOff, 
-  Users, Globe2, Info, Link2
-} from 'lucide-react';
+import { Loader2, Film, Lock, Eye, EyeOff, Users, Globe2, Info, Link2, MessageSquare, Settings2} from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { 
   Tooltip,
@@ -27,19 +24,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useRoom } from '@/hooks/useRoom';
+import { CreateRoomDto, ParticipantRole } from '@/types/room';
+
+const BACKGROUND_IMAGE = "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80";
 
 export function CreateRoomCard() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const { createRoom, loading: isSubmitting } = useRoom();
+  
+  // Basic Room Settings
   const [name, setName] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [isPublic, setIsPublic] = useState(true);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formTouched, setFormTouched] = useState(false);
-  const [isPublic, setIsPublic] = useState(true);
+  
+  // Advanced Room Settings
   const [maxParticipants, setMaxParticipants] = useState('10');
   const [autoStart, setAutoStart] = useState(false);
+  const [allowSkip, setAllowSkip] = useState(true);
+  const [allowPlaybackControl, setAllowPlaybackControl] = useState(true);
+  const [chatEnabled, setChatEnabled] = useState(true);
+  const [autoCleanup, setAutoCleanup] = useState(true);
+  
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [formTouched, setFormTouched] = useState(false);
 
   const roomId = useMemo(() => uuidv4(), []);
 
@@ -47,13 +58,13 @@ export function CreateRoomCard() {
     const errors: string[] = [];
 
     if (!name.trim()) {
-      errors.push('Please enter a room name');
+      errors.push('Room name is required');
     } else if (name.length < 3) {
-      errors.push('Room name must be at least 3 characters long');
+      errors.push('Room name must be at least 3 characters');
     }
 
     if (!videoUrl.trim()) {
-      errors.push('Please enter a video URL');
+      errors.push('Video URL is required');
     } else {
       try {
         new URL(videoUrl);
@@ -80,19 +91,46 @@ export function CreateRoomCard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm() || !currentUser?.customUID) return;
 
-    setIsSubmitting(true);
     try {
-      // Simulated API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const roomData: CreateRoomDto = {
+        key: roomId,
+        name: name.trim(),
+        videoUrl: videoUrl.trim(),
+        createdBy: currentUser.customUID,
+        isPublic,
+        password: !isPublic ? password : undefined,
+        maxParticipants: parseInt(maxParticipants),
+        autoStart,
+        participants: [{
+          userId: currentUser.customUID,
+          name: currentUser.displayName || 'Anonymous',
+          role: 'admin' as ParticipantRole,
+          joinedAt: new Date(),
+          lastActive: new Date()
+        }],
+        videoState: {
+          currentTime: 0,
+          isPlaying: false,
+          playbackRate: 1,
+          lastUpdated: new Date()
+        },
+        settings: {
+          isPrivate: !isPublic,
+          allowSkip,
+          allowPlaybackControl,
+          maxParticipants: parseInt(maxParticipants),
+          chatEnabled,
+          autoCleanup
+        }
+      };
+
+      const newRoom = await createRoom(roomData);
       toast.success('Room created successfully!');
-      navigate(`/room/${roomId}`);
+      navigate(`/room/${newRoom.key}`);
     } catch (error) {
       toast.error('Failed to create room. Please try again.');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -116,29 +154,37 @@ export function CreateRoomCard() {
   return (
     <MainLayout>
       <TooltipProvider>
-        <main className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-          <div className="container mx-auto px-4 py-8">
-            <motion.section 
+        <main 
+          className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5"
+          style={{
+            backgroundImage: `linear-gradient(to bottom right, rgba(0,0,0,0.8), rgba(0,0,0,0.9)), url(${BACKGROUND_IMAGE})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        >
+          <div className="container mx-auto px-4 py-12">
+            <motion.div 
               initial="hidden"
               animate="visible"
               variants={formVariants}
               className="max-w-3xl mx-auto"
             >
               <motion.header className="text-center mb-8" variants={itemVariants}>
-                <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+                <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 mb-3">
                   Create Your Theater Room
                 </h1>
-                <p className="text-muted-foreground mt-2 max-w-xl mx-auto">
-                  Set up a synchronized viewing experience and invite friends to watch together
+                <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                  Set up a synchronized viewing experience and invite friends to watch together in real-time
                 </p>
               </motion.header>
 
               <motion.form 
                 onSubmit={handleSubmit}
-                className="space-y-8 bg-card rounded-xl p-8 shadow-lg border"
-                variants={formVariants}
                 onChange={() => !formTouched && setFormTouched(true)}
+                className="space-y-8 backdrop-blur-xl bg-black/40 rounded-xl p-8 shadow-2xl border border-primary/10"
+                variants={formVariants}
               >
+                {/* Basic Settings */}
                 <div className="space-y-6">
                   <motion.div variants={itemVariants}>
                     <Label htmlFor="room-name" className="text-base">Room Name</Label>
@@ -171,7 +217,7 @@ export function CreateRoomCard() {
                     </div>
                   </motion.div>
 
-                  <Separator />
+                  <Separator className="bg-primary/10" />
 
                   <motion.div variants={itemVariants} className="flex items-center justify-between">
                     <div className="space-y-0.5">
@@ -187,7 +233,7 @@ export function CreateRoomCard() {
                         </Tooltip>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {isPublic ? "Anyone can join" : "Password protected"}
+                        {isPublic ? "Anyone can join with the link" : "Password protected access"}
                       </p>
                     </div>
                     <Switch
@@ -228,50 +274,130 @@ export function CreateRoomCard() {
                     </motion.div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <motion.div variants={itemVariants}>
-                      <Label htmlFor="max-participants" className="text-base">Max Participants</Label>
-                      <div className="relative mt-2">
-                        <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                        <Select value={maxParticipants} onValueChange={setMaxParticipants}>
-                          <SelectTrigger className="pl-11 h-12">
-                            <SelectValue placeholder="Select maximum participants" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {[5, 10, 15, 20, 25, 30].map(num => (
-                              <SelectItem key={num} value={num.toString()}>
-                                {num} participants
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </motion.div>
+                  <motion.div variants={itemVariants}>
+                    <Button
+                      type="button"
+                      variant="default"
+                      className="w-full"
+                      onClick={() => setShowAdvanced(!showAdvanced)}
+                    >
+                      <Settings2 className="w-4 h-4 mr-2" />
+                      {showAdvanced ? "Hide" : "Show"} Advanced Settings
+                    </Button>
+                  </motion.div>
 
-                    <motion.div variants={itemVariants} className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <Label htmlFor="auto-start" className="text-base">Auto-start Video</Label>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Info className="w-4 h-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Video will start automatically when participants join
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {autoStart ? "Starts automatically" : "Manual start"}
-                        </p>
+                  {showAdvanced && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-6"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <motion.div variants={itemVariants}>
+                          <Label htmlFor="max-participants" className="text-base">Max Participants</Label>
+                          <div className="relative mt-2">
+                            <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                            <Select value={maxParticipants} onValueChange={setMaxParticipants}>
+                              <SelectTrigger className="pl-11 h-12">
+                                <SelectValue placeholder="Select maximum participants" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[5, 10, 15, 20, 25, 30].map(num => (
+                                  <SelectItem key={num} value={num.toString()}>
+                                    {num} participants
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </motion.div>
+
+                        <motion.div variants={itemVariants} className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <Label className="text-base">Auto-start Video</Label>
+                              <p className="text-sm text-muted-foreground">Start playing when users join</p>
+                            </div>
+                            <Switch checked={autoStart} onCheckedChange={setAutoStart} />
+                          </div>
+                        </motion.div>
+
+                        <motion.div variants={itemVariants} className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <Label className="text-base">Allow Skipping</Label>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Info className="w-4 h-4 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    Let users skip to any part of the video
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                              <p className="text-sm text-muted-foreground">Video seeking controls</p>
+                            </div>
+                            <Switch checked={allowSkip} onCheckedChange={setAllowSkip} />
+                          </div>
+                        </motion.div>
+
+                        <motion.div variants={itemVariants} className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <Label className="text-base">Playback Control</Label>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Info className="w-4 h-4 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    Allow users to control playback speed
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                              <p className="text-sm text-muted-foreground">Speed adjustment</p>
+                            </div>
+                            <Switch checked={allowPlaybackControl} onCheckedChange={setAllowPlaybackControl} />
+                          </div>
+                        </motion.div>
+
+                        <motion.div variants={itemVariants} className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <Label className="text-base">Enable Chat</Label>
+                                <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                              <p className="text-sm text-muted-foreground">Real-time chat feature</p>
+                            </div>
+                            <Switch checked={chatEnabled} onCheckedChange={setChatEnabled} />
+                          </div>
+                        </motion.div>
+
+                        <motion.div variants={itemVariants} className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <Label className="text-base">Auto Cleanup</Label>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Info className="w-4 h-4 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    Automatically close room when inactive
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                              <p className="text-sm text-muted-foreground">Close inactive rooms</p>
+                            </div>
+                            <Switch checked={autoCleanup} onCheckedChange={setAutoCleanup} />
+                          </div>
+                        </motion.div>
                       </div>
-                      <Switch
-                        id="auto-start"
-                        checked={autoStart}
-                        onCheckedChange={setAutoStart}
-                      />
                     </motion.div>
-                  </div>
+                  )}
                 </div>
 
                 <motion.div variants={itemVariants}>
@@ -300,13 +426,12 @@ export function CreateRoomCard() {
                   )}
                 </motion.div>
               </motion.form>
-            </motion.section>
+            </motion.div>
           </div>
         </main>
       </TooltipProvider>
-    </MainLayout>
+  </MainLayout>
   );
 }
 
 export default CreateRoomCard;
-
