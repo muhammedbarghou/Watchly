@@ -11,8 +11,8 @@ import { RoomPage } from './pages/RoomPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ResetPasswordPage } from './pages/ResetPassword';
 import { ChatPage } from './pages/ChatPage';
-import { CreateRoomCard } from '@/pages/CreateRoomPage';
-import { JoinRoomCard } from './pages/JoinRoomPage';
+import { CreateRoomPage } from '@/pages/CreateRoomPage';
+import { JoinRoomPage } from './pages/JoinRoomPage';
 import ErrorBoundary from './components/auth/ErrorBoundary';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { TermsOfServices } from './pages/TermsOfServices';
@@ -57,8 +57,8 @@ const routes: RouteConfig[] = [
   { path: ROUTES.HUB, element: <Hub />, isPrivate: true, title: 'Hub' },
   { path: ROUTES.FRIENDS, element: <FriendsPage />, isPrivate: true, title: 'Friends' },
   { path: ROUTES.FRIENDS_LIST, element: <FriendsList />, isPrivate: true, title: 'Friends List' },
-  { path: ROUTES.JOIN_ROOM, element: <JoinRoomCard />, isPrivate: true, title: 'Join Room' },
-  { path: ROUTES.CREATE_ROOM, element: <CreateRoomCard />, isPrivate: true, title: 'Create Room' },
+  { path: ROUTES.JOIN_ROOM, element: <JoinRoomPage />, isPrivate: true, title: 'Join Room' },
+  { path: ROUTES.CREATE_ROOM, element: <CreateRoomPage />, isPrivate: true, title: 'Create Room' },
   { path: ROUTES.ROOM, element: <RoomPage />, isPrivate: true, title: 'Room' },
   { path: ROUTES.CHAT, element: <ChatPage />, isPrivate: true, title: 'Chat' },
   { path: ROUTES.SETTINGS, element: <SettingsPage />, isPrivate: true, title: 'Settings' },

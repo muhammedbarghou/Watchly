@@ -1,88 +1,104 @@
 import { useRef, useState } from 'react';
 import ReactPlayer from 'react-player';
 import { VideoPlayerControls } from './VideoPlayerControls';
-import { useFullscreen } from '../../hooks/use-fullscreen';
 import { ProgressBar } from './ProgressBar';
-import { Loader } from '../ui/loader';
+import { useFullscreen } from '../../hooks/use-fullscreen';
 
 interface VideoPlayerProps {
   url: string;
-  onProgress?: (state: { played: number; playedSeconds: number }) => void;
-  onPause?: () => void;
-  onPlay?: () => void;
+  playing: boolean;
+  currentTime: number;
+  playbackRate: number;
+  onPlayPause: (isPlaying: boolean) => void;
+  onSeek: (time: number) => void;
 }
 
-export function VideoPlayer({ url, onProgress, onPause, onPlay }: VideoPlayerProps) {
+export function VideoPlayer({
+  url,
+  playing,
+  currentTime,
+  playbackRate,
+  onPlayPause,
+  onSeek,
+}: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<ReactPlayer>(null);
-  const [playing, setPlaying] = useState(true);
-  const [muted, setMuted] = useState(false);
+
+  // Fullscreen state
+  const { toggleFullscreen } = useFullscreen(containerRef);
+
+  // Video duration state
+  const [videoDuration, setVideoDuration] = useState(0);
+
+  // Volume and mute states
   const [volume, setVolume] = useState(1);
-  const [played, setPlayed] = useState(0); // Track played progress
-  const [seeking, setSeeking] = useState(false); // Track seeking state
-  const [loading, setLoading] = useState(true); // Track loading state
-  const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
+  const [muted, setMuted] = useState(false);
 
-  const handlePlayPause = () => {
-    setPlaying(!playing);
-    playing ? onPause?.() : onPlay?.();
-  };
-
-  const handleSeek = (seconds: number) => {
-    const player = playerRef.current;
-    if (player) {
-      const currentTime = player.getCurrentTime();
-      player.seekTo(currentTime + seconds);
-    }
-  };
-
-  const handleProgress = (state: { played: number; playedSeconds: number }) => {
-    if (!seeking) {
-      setPlayed(state.played);
-    }
-    onProgress?.(state);
-  };
-
-  const handleSeekTo = (value: number) => {
-    const player = playerRef.current;
-    if (player) {
-      player.seekTo(value);
-      setPlayed(value);
-    }
-  };
-
+  // Handle video ready event to get the duration
   const handleReady = () => {
-    setLoading(false); // Hide loader when video is ready
+    if (playerRef.current) {
+      const duration = playerRef.current.getDuration();
+      if (duration) {
+        setVideoDuration(duration);
+      }
+    }
   };
 
+  // Handle errors
   const handleError = (error: any) => {
     console.error('Video playback error:', error);
-    setLoading(false); // Hide loader on error
+  };
+
+  // Handle volume change
+  const handleVolumeChange = (newVolume: number) => {
+    setVolume(newVolume);
+    if (newVolume > 0) {
+      setMuted(false);
+    }
+  };
+
+  // Handle mute toggle
+  const handleMute = () => {
+    setMuted(!muted);
+  };
+
+  // Keyboard controls
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    switch (e.key) {
+      case ' ': // Spacebar to toggle play/pause
+        e.preventDefault(); // Prevent scrolling
+        onPlayPause(!playing);
+        break;
+      case 'ArrowLeft': // Seek backward
+        onSeek(Math.max(currentTime - 10, 0));
+        break;
+      case 'ArrowRight': // Seek forward
+        onSeek(Math.min(currentTime + 10, videoDuration));
+        break;
+      case 'f': // Toggle fullscreen
+        toggleFullscreen();
+        break;
+      case 'm': // Toggle mute
+        handleMute();
+        break;
+      case 'ArrowUp': // Increase volume
+        handleVolumeChange(Math.min(volume + 0.1, 1));
+        break;
+      case 'ArrowDown': // Decrease volume
+        handleVolumeChange(Math.max(volume - 0.1, 0));
+        break;
+      default:
+        break;
+    }
   };
 
   return (
     <div
       ref={containerRef}
       className="relative h-full bg-black overflow-hidden"
-      tabIndex={0} // Enable keyboard focus
-      onKeyDown={(e) => {
-        // Add keyboard shortcuts
-        if (e.key === ' ') {
-          handlePlayPause();
-        } else if (e.key === 'ArrowLeft') {
-          handleSeek(-10);
-        } else if (e.key === 'ArrowRight') {
-          handleSeek(10);
-        }
-      }}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
     >
-      {/* Loading Spinner */}
-      {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-          <Loader className="w-12 h-12 text-white" />
-        </div>
-      )}
-
       {/* Video Player */}
       <ReactPlayer
         ref={playerRef}
@@ -90,9 +106,10 @@ export function VideoPlayer({ url, onProgress, onPause, onPlay }: VideoPlayerPro
         width="100%"
         height="100%"
         playing={playing}
-        muted={muted}
         volume={volume}
-        onProgress={handleProgress}
+        muted={muted}
+        currentTime={currentTime}
+        playbackRate={playbackRate}
         onReady={handleReady}
         onError={handleError}
         style={{ backgroundColor: 'black' }}
@@ -100,23 +117,21 @@ export function VideoPlayer({ url, onProgress, onPause, onPlay }: VideoPlayerPro
 
       {/* Progress Bar */}
       <ProgressBar
-        played={played}
-        onSeek={handleSeekTo}
-        onSeekStart={() => setSeeking(true)}
-        onSeekEnd={() => setSeeking(false)}
+        played={currentTime / videoDuration} // Fraction of video played (0 to 1)
+        duration={videoDuration} // Total duration of the video in seconds
+        onSeek={onSeek} // Callback to handle seeking
       />
 
       {/* Video Controls */}
       <VideoPlayerControls
         playing={playing}
-        muted={muted}
-        fullscreen={isFullscreen}
-        volume={volume}
-        onPlayPause={handlePlayPause}
-        onMute={() => setMuted(!muted)}
-        onVolumeChange={setVolume}
+        onPlayPause={onPlayPause}
+        onSeek={(seconds: number) => onSeek(seconds)} // Adjust seek behavior
         onFullscreen={toggleFullscreen}
-        onSeek={handleSeek}
+        muted={muted}
+        volume={volume}
+        onMute={handleMute}
+        onVolumeChange={handleVolumeChange}
       />
     </div>
   );

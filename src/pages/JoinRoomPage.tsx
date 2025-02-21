@@ -17,17 +17,20 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useRoom } from '@/hooks/useRoom';
 
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export function JoinRoomCard() {
+export function JoinRoomPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [roomKey, setRoomKey] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { joinRoom, loading: joiningRoom } = useRoom(roomKey || undefined);
 
   const validateForm = () => {
     const errors: string[] = [];
@@ -58,19 +61,12 @@ export function JoinRoomCard() {
 
     setIsSubmitting(true);
     try {
-      // Simulated API call with form data
-      const joinData = {
-        roomKey,
-        password: password || undefined,
-        userId: currentUser?.uid
-      };
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await joinRoom(password || undefined);
       toast.success('Successfully joined the room!');
       navigate(`/room/${roomKey}`);
     } catch (error) {
-      toast.error('Failed to join room. Please check the room key and password.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to join room';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -92,6 +88,8 @@ export function JoinRoomCard() {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0 }
   };
+
+  const isDisabled = isSubmitting || joiningRoom || !currentUser;
 
   return (
     <MainLayout>
@@ -184,10 +182,10 @@ export function JoinRoomCard() {
                     type="submit" 
                     size="lg"
                     className="w-full h-12 text-base"
-                    disabled={isSubmitting || !currentUser}
-                    aria-disabled={isSubmitting || !currentUser}
+                    disabled={isDisabled}
+                    aria-disabled={isDisabled}
                   >
-                    {isSubmitting ? (
+                    {(isSubmitting || joiningRoom) ? (
                       <>
                         <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                         Joining Room...
@@ -214,4 +212,4 @@ export function JoinRoomCard() {
   );
 }
 
-export default JoinRoomCard;
+export default JoinRoomPage;

@@ -3,8 +3,6 @@ import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 
-
-
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -12,6 +10,7 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  databaseURL: "https://watchly-d16b7-default-rtdb.europe-west1.firebasedatabase.app/", // Make sure this is included
 };
 
 // Initialize Firebase
@@ -26,6 +25,4 @@ const db = getFirestore(app);
 
 const rtdb = getDatabase(app);
 
-
-export { auth, googleProvider, db };
-export { rtdb };
+export { auth, googleProvider, db, rtdb };

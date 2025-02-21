@@ -1,62 +1,27 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
 import { useRoom } from '@/hooks/useRoom';
-import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Loader2, Film, Lock, Eye, EyeOff, Users, 
-  Globe2, Info, Link2, Settings2
-} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { CreateRoomDto, ParticipantRole } from '@/types/room';
+import { Globe2, Loader2,Lock} from 'lucide-react';
 
-const BACKGROUND_IMAGE = "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80";
 
-export function CreateRoomCard() {
+export function CreateRoomPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { createRoom, loading: isSubmitting } = useRoom();
-  const roomId = useMemo(() => uuidv4(), []);
 
   // Form State
-  const [formTouched, setFormTouched] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  
-  // Basic Settings State
   const [name, setName] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  
-  // Advanced Settings State
-  const [maxParticipants, setMaxParticipants] = useState('10');
-  const [autoStart, setAutoStart] = useState(false);
-  const [allowSkip, setAllowSkip] = useState(true);
-  const [allowPlaybackControl, setAllowPlaybackControl] = useState(true);
-  const [chatEnabled, setChatEnabled] = useState(true);
-  const [autoCleanup, setAutoCleanup] = useState(true);
 
+  // Validation Logic
   const validateForm = () => {
     const errors: string[] = [];
 
@@ -92,301 +57,112 @@ export function CreateRoomCard() {
     return true;
   };
 
+  // Handle Form Submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm() || !currentUser?.customUID) return;
+    if (!validateForm() || !currentUser?.uid) return;
 
     try {
-      const roomData: CreateRoomDto = {
-        key: roomId,
+      const roomData = {
         name: name.trim(),
         videoUrl: videoUrl.trim(),
-        createdBy: currentUser.customUID,
         isPublic,
-        password: !isPublic ? password : undefined,
-        maxParticipants: parseInt(maxParticipants),
-        autoStart,
-        participants: [{
-          userId: currentUser.customUID,
-          name: currentUser.displayName || 'Anonymous',
-          role: 'admin' as ParticipantRole,
-          joinedAt: new Date(),
-          lastActive: new Date()
-        }],
-        videoState: {
-          currentTime: 0,
-          isPlaying: false,
-          playbackRate: 1,
-          lastUpdated: new Date()
-        },
-        settings: {
-          isPrivate: !isPublic,
-          allowSkip,
-          allowPlaybackControl,
-          maxParticipants: parseInt(maxParticipants),
-          chatEnabled,
-          autoCleanup
-        }
+        password: isPublic ? undefined : password,
       };
 
-      const newRoom = await createRoom(roomData);
+      const newRoomId = await createRoom(roomData);
       toast.success('Room created successfully!');
-      navigate(`/room/${newRoom.key}`);
+      navigate(`/room/${newRoomId}`);
     } catch (error) {
       toast.error('Failed to create room. Please try again.');
     }
   };
 
-  const formVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: {
-        duration: 0.5,
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: { opacity: 1, y: 0 }
-  };
-
   return (
     <MainLayout>
-      <TooltipProvider>
-        <main 
-          className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 dark:from-background/90 dark:via-background/95 dark:to-primary/10"
-          style={{
-            backgroundImage: `linear-gradient(to bottom right, rgba(0,0,0,0.8), rgba(0,0,0,0.9)), url(${BACKGROUND_IMAGE})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        >
-          <div className="container mx-auto px-4 py-12">
-            <motion.div 
-              initial="hidden"
-              animate="visible"
-              variants={formVariants}
-              className="max-w-3xl mx-auto"
-            >
-              <motion.header className="text-center mb-8" variants={itemVariants}>
-                <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60 dark:from-primary/80 dark:to-primary/40 mb-3">
-                  Create Your Theater Room
-                </h1>
-                <p className="text-muted-foreground dark:text-muted-foreground/80 text-lg max-w-2xl mx-auto">
-                  Set up a synchronized viewing experience and invite friends to watch together in real-time
-                </p>
-              </motion.header>
+      <div className="space-y-8 backdrop-blur-xl bg-black/40 dark:bg-black/60 rounded-xl p-8 shadow-2xl border border-primary/10 dark:border-primary/5">
+        {/* Header */}
+        <h2 className="text-2xl font-bold text-center">Create Your Theater Room</h2>
+        <p className="text-sm text-center text-muted-foreground">
+          Set up a synchronized viewing experience and invite friends to watch together in real-time.
+        </p>
 
-              <motion.form 
-                onSubmit={handleSubmit}
-                onChange={() => !formTouched && setFormTouched(true)}
-                className="space-y-8 backdrop-blur-xl bg-black/40 dark:bg-black/60 rounded-xl p-8 shadow-2xl border border-primary/10 dark:border-primary/5"
-                variants={formVariants}
-              >
-                {/* Basic Settings */}
-                <div className="space-y-6">
-                  <motion.div variants={itemVariants}>
-                    <Label htmlFor="room-name" className="text-base">Room Name</Label>
-                    <div className="relative mt-2">
-                      <Film className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        id="room-name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Enter a memorable name for your room"
-                        className="pl-11 h-12"
-                        required
-                      />
-                    </div>
-                  </motion.div>
-
-                  <motion.div variants={itemVariants}>
-                    <Label htmlFor="video-url" className="text-base">Video URL</Label>
-                    <div className="relative mt-2">
-                      <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        id="video-url"
-                        type="url"
-                        value={videoUrl}
-                        onChange={(e) => setVideoUrl(e.target.value)}
-                        placeholder="Paste the video URL you want to watch"
-                        className="pl-11 h-12"
-                        required
-                      />
-                    </div>
-                  </motion.div>
-
-                  <Separator className="bg-primary/10" />
-
-                  <motion.div variants={itemVariants} className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor="public-toggle" className="text-base">Public Room</Label>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Info className="w-4 h-4 text-muted-foreground" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            Public rooms are accessible to anyone with the link
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {isPublic ? "Anyone can join with the link" : "Password protected access"}
-                      </p>
-                    </div>
-                    <Switch
-                      id="public-toggle"
-                      checked={isPublic}
-                      onCheckedChange={setIsPublic}
-                    />
-                  </motion.div>
-
-                  {!isPublic && (
-                    <motion.div variants={itemVariants}>
-                      <Label htmlFor="password" className="text-base">Room Password</Label>
-                      <div className="relative mt-2">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                        <Input
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="Set a password for your private room"
-                          className="pl-11 pr-11 h-12"
-                          required={!isPublic}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-2 top-1/2 -translate-y-1/2"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="w-4 h-4" />
-                          ) : (
-                            <Eye className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  <motion.div variants={itemVariants}>
-                    <Button
-                      type="button"
-                      variant="default"
-                      className="w-full"
-                      onClick={() => setShowAdvanced(!showAdvanced)}
-                    >
-                      <Settings2 className="w-4 h-4 mr-2" />
-                      {showAdvanced ? "Hide" : "Show"} Advanced Settings
-                    </Button>
-                  </motion.div>
-
-                  <AnimatePresence>
-            {showAdvanced && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-6 overflow-hidden dark:bg-background/5 rounded-lg p-4"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Max Participants */}
-                  <div>
-                    <Label htmlFor="max-participants">Max Participants</Label>
-                    <div className="relative mt-2">
-                      <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Select value={maxParticipants} onValueChange={setMaxParticipants}>
-                        <SelectTrigger className="pl-11 h-12">
-                          <SelectValue placeholder="Select maximum participants" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[5, 10, 15, 20, 25, 30].map((num) => (
-                            <SelectItem key={num} value={num.toString()}>
-                              {num} participants
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Other Settings */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Auto-start Video</Label>
-                        <p className="text-sm text-muted-foreground">Start playing when users join</p>
-                      </div>
-                      <Switch checked={autoStart} onCheckedChange={setAutoStart} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Allow Skipping</Label>
-                        <p className="text-sm text-muted-foreground">Video seeking controls</p>
-                      </div>
-                      <Switch checked={allowSkip} onCheckedChange={setAllowSkip} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Enable Chat</Label>
-                        <p className="text-sm text-muted-foreground">Real-time chat feature</p>
-                      </div>
-                      <Switch checked={chatEnabled} onCheckedChange={setChatEnabled} />
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-                </div>
-
-                <motion.div variants={itemVariants}>
-                  <Button 
-                    type="submit" 
-                    size="lg"
-                    className="w-full h-12 text-base dark:hover:bg-primary/90"
-                    disabled={isSubmitting || !currentUser}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Creating Your Theater...
-                      </>
-                    ) : (
-                      <>
-                        <Globe2 className="w-5 h-5 mr-2" />
-                        Create Theater Room
-                      </>
-                    )}
-                  </Button>
-                  {!currentUser && (
-                    <p className="text-sm text-muted-foreground dark:text-muted-foreground/70 mt-3 text-center">
-                      Please login to create a room
-                    </p>
-                  )}
-                </motion.div>
-              </motion.form>
-            </motion.div>
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Room Name */}
+          <div>
+            <Label>Room Name</Label>
+            <Input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter a memorable name for your room"
+              required
+            />
           </div>
-        </main>
-      </TooltipProvider>
+
+          {/* Video URL */}
+          <div>
+            <Label>Video URL</Label>
+            <Input
+              type="url"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="Paste the video URL you want to watch"
+              required
+            />
+          </div>
+
+          {/* Public/Private Toggle */}
+          <div className="flex items-center justify-between">
+            <Label>Public Room</Label>
+            <Button
+              variant="ghost"
+              onClick={(e) => {
+                e.preventDefault();
+                setIsPublic(!isPublic);
+              }}
+            >
+              {isPublic ? <Globe2 /> : <Lock />}
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              {isPublic ? 'Anyone can join with the link' : 'Password protected access'}
+            </span>
+          </div>
+
+          {/* Password Field (for private rooms) */}
+          {!isPublic && (
+            <div>
+              <Label>Room Password</Label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Set a password for your private room"
+                required
+              />
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <Loader2 className="animate-spin mr-2" />
+            ) : (
+              'Create Theater Room'
+            )}
+          </Button>
+
+          {/* Login Prompt */}
+          {!currentUser && (
+            <p className="text-center text-sm text-red-500">
+              Please log in to create a room.
+            </p>
+          )}
+        </form>
+      </div>
     </MainLayout>
   );
 }
 
-export default CreateRoomCard;
+export default CreateRoomPage;
