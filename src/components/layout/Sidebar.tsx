@@ -194,7 +194,6 @@ export function Sidebar({ isOpen, isCollapsed }: SidebarProps) {
     >
       <ScrollArea className="flex-1">
         <div className={cn("space-y-4 py-4", isCollapsed ? "px-2" : "px-4")}>
-          {!isCollapsed && <h2 className="text-lg font-semibold tracking-tight mb-2">Navigation</h2>}
           <nav className="space-y-1">
             {navigationLinks.map((link) => (
               <NavLink key={link.to || link.label} link={link} isCollapsed={isCollapsed} />
