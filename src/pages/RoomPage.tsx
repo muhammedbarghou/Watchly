@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import ReactPlayer from 'react-player';
 import { 
   collection, 
   doc, 
-  getDoc, 
+
   query, 
   where, 
   getDocs, 
@@ -23,7 +24,6 @@ import {
   Card, 
   CardContent, 
   CardDescription, 
-  CardFooter, 
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
@@ -78,7 +78,7 @@ export function RoomPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const playerRef = useRef<ReactPlayer>(null);
   
   // State
   const [room, setRoom] = useState<Room | null>(null);
@@ -91,9 +91,10 @@ export function RoomPage() {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
-  const [volume, setVolume] = useState<number>(100);
+  const [volume, setVolume] = useState<number>(1); // ReactPlayer uses 0-1 scale
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isHost, setIsHost] = useState<boolean>(false);
+  const [seeking, setSeeking] = useState<boolean>(false);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -111,6 +112,8 @@ export function RoomPage() {
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Remove the manual check as ReactPlayer handles this differently
 
   // Load room data
   useEffect(() => {
@@ -206,22 +209,19 @@ export function RoomPage() {
         
         // Only update if not from local change
         if (!playerStateChangeRef.current) {
-          if (roomData.currentTime !== undefined && videoRef.current) {
-            const timeDiff = Math.abs(videoRef.current.currentTime - roomData.currentTime);
+          if (roomData.currentTime !== undefined && playerRef.current) {
+            const currentPlayerTime = playerRef.current.getCurrentTime();
+            const timeDiff = Math.abs(currentPlayerTime - roomData.currentTime);
             
             // Only seek if difference is more than 2 seconds
-            if (timeDiff > 2) {
-              videoRef.current.currentTime = roomData.currentTime;
+            if (timeDiff > 2 && !seeking) {
+              playerRef.current.seekTo(roomData.currentTime, 'seconds');
+              setCurrentTime(roomData.currentTime);
             }
           }
           
           if (roomData.isPlaying !== undefined) {
             setIsPlaying(roomData.isPlaying);
-            if (roomData.isPlaying && videoRef.current) {
-              videoRef.current.play().catch(error => console.error('Play error:', error));
-            } else if (!roomData.isPlaying && videoRef.current) {
-              videoRef.current.pause();
-            }
           }
         }
         
@@ -288,10 +288,10 @@ export function RoomPage() {
   useEffect(() => {
     if (isHost && isVideoReady && documentId) {
       syncIntervalRef.current = window.setInterval(() => {
-        if (videoRef.current) {
+        if (playerRef.current) {
           updateDoc(doc(db, 'rooms', documentId), {
-            currentTime: videoRef.current.currentTime,
-            isPlaying: !videoRef.current.paused,
+            currentTime: playerRef.current.getCurrentTime(),
+            isPlaying: isPlaying,
             updatedAt: serverTimestamp(),
           }).catch(error => {
             console.error('Error syncing video state:', error);
@@ -305,7 +305,7 @@ export function RoomPage() {
         window.clearInterval(syncIntervalRef.current);
       }
     };
-  }, [isHost, isVideoReady, documentId]);
+  }, [isHost, isVideoReady, documentId, isPlaying]);
 
   // Send a chat message
   const sendMessage = async (e: React.FormEvent) => {
@@ -329,72 +329,79 @@ export function RoomPage() {
     }
   };
 
-  // Handle video controls
+  // Toggle play state - now only allowed for host
   const togglePlay = async () => {
-    if (!videoRef.current || !documentId) return;
+    if (!documentId || !isHost) return;
     
     playerStateChangeRef.current = true;
+    setIsPlaying(!isPlaying);
     
-    if (isPlaying) {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      try {
-        await videoRef.current.play();
-        setIsPlaying(true);
-      } catch (error) {
-        console.error('Error playing video:', error);
-        toast.error('Failed to play video. Check if the URL is valid.');
-        setIsPlaying(false);
-      }
-    }
-    
-    if (isHost) {
-      try {
-        await updateDoc(doc(db, 'rooms', documentId), {
-          isPlaying: !isPlaying,
-          updatedAt: serverTimestamp(),
-        });
-      } catch (error) {
-        console.error('Error updating play state:', error);
-      }
+    try {
+      await updateDoc(doc(db, 'rooms', documentId), {
+        isPlaying: !isPlaying,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error updating play state:', error);
     }
   };
 
-  const handleTimeUpdate = () => {
-    if (!videoRef.current) return;
-    setCurrentTime(videoRef.current.currentTime);
+  const handleProgress = (state: { played: number; playedSeconds: number; loaded: number; loadedSeconds: number }) => {
+    if (!seeking) {
+      setCurrentTime(state.playedSeconds);
+    }
   };
 
-  const handleDurationChange = () => {
-    if (!videoRef.current) return;
-    setDuration(videoRef.current.duration || 0);
+  const handleDuration = (duration: number) => {
+    setDuration(duration || 0);
+  };
+
+  const handleReady = () => {
+    setIsVideoReady(true);
+    console.log("Video ready!");
+    
+    // Sync with room state if available
+    if (room?.currentTime && playerRef.current) {
+      playerRef.current.seekTo(room.currentTime, 'seconds');
+    }
+  };
+
+  const handleError = (error: any) => {
+    console.error("ReactPlayer error:", error);
+    toast.error("Error loading video. Check if the URL is valid and accessible.");
+  };
+
+  const handleStartSeeking = () => {
+    setSeeking(true);
   };
 
   const handleTimeSeek = (value: number[]) => {
-    if (!videoRef.current || !documentId) return;
+    if (!documentId) return;
     
-    videoRef.current.currentTime = value[0];
-    setCurrentTime(value[0]);
+    const seekTime = value[0];
+    setCurrentTime(seekTime);
+    
+    if (playerRef.current) {
+      playerRef.current.seekTo(seekTime, 'seconds');
+    }
     
     if (isHost) {
       playerStateChangeRef.current = true;
       
       updateDoc(doc(db, 'rooms', documentId), {
-        currentTime: value[0],
+        currentTime: seekTime,
         updatedAt: serverTimestamp(),
       }).catch(error => {
         console.error('Error updating time:', error);
       });
     }
+    
+    setSeeking(false);
   };
 
   const handleVolumeChange = (value: number[]) => {
-    if (!videoRef.current) return;
-    
-    const volumeValue = value[0];
+    const volumeValue = value[0] / 100; // Convert to 0-1 range for ReactPlayer
     setVolume(volumeValue);
-    videoRef.current.volume = volumeValue / 100;
     
     if (volumeValue === 0) {
       setIsMuted(true);
@@ -404,15 +411,7 @@ export function RoomPage() {
   };
 
   const toggleMute = () => {
-    if (!videoRef.current) return;
-    
-    if (isMuted) {
-      videoRef.current.volume = volume / 100;
-      setIsMuted(false);
-    } else {
-      videoRef.current.volume = 0;
-      setIsMuted(true);
-    }
+    setIsMuted(!isMuted);
   };
 
   // Copy room ID to clipboard
@@ -477,24 +476,72 @@ export function RoomPage() {
               </CardHeader>
               <CardContent>
                 <div className="relative aspect-video bg-black rounded-md overflow-hidden">
-                  {/* Use video element with poster for better compatibility */}
-                  <video
-                    ref={videoRef}
-                    className="w-full h-full"
-                    src={room.videoUrl}
-                    onTimeUpdate={handleTimeUpdate}
-                    onDurationChange={handleDurationChange}
-                    onLoadedData={() => setIsVideoReady(true)}
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
-                    onError={(e) => {
-                      console.error("Video error:", e);
-                      toast.error("Error loading video. Check if the URL is valid and accessible.");
-                    }}
+                  <ReactPlayer
+                    ref={playerRef}
+                    url={room.videoUrl}
+                    className="react-player"
                     controls={false}
-                    playsInline
-                    poster="/video-placeholder.jpg"
+                    width="100%"
+                    height="100%"
+                    playing={isPlaying}
+                    volume={volume}
+                    muted={isMuted}
+                    onReady={handleReady}
+                    onProgress={handleProgress}
+                    onDuration={handleDuration}
+                    onError={handleError}
+                    onPlay={() => {
+                      if (!isHost) {
+                        if (playerRef.current && !isPlaying) {
+                          playerRef.current.seekTo(currentTime);
+                          return false; // This doesn't actually prevent play, we need to pause again
+                        }
+                      } else {
+                        setIsPlaying(true);
+                      }
+                    }}
+                    onPause={() => {
+                      // Only allow the host to control playback from the player itself
+                      if (!isHost) {
+                        if (playerRef.current && isPlaying) {
+                          setTimeout(() => {
+                            if (playerRef.current) playerRef.current.seekTo(currentTime);
+                          }, 50);
+                          return false;
+                        }
+                      } else {
+                        setIsPlaying(false);
+                      }
+                    }}
+                    config={{
+                      youtube: {
+                        playerVars: { 
+                          disablekb: !isHost ? 1 : 0, // Disable keyboard controls for non-hosts
+                          modestbranding: 1,
+                          origin: window.location.origin,
+                          controls: 0 // Hide YouTube's own controls
+                        }
+                      },
+                      file: {
+                        attributes: {
+                          controlsList: 'nodownload',
+                          disablePictureInPicture: true
+                        }
+                      }
+                    }}
                   />
+                  
+                  {/* Overlay to prevent non-host users from clicking on video */}
+                  {!isHost && (
+                    <div 
+                      className="absolute inset-0 bg-transparent cursor-not-allowed" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toast.info("Only the host can control playback");
+                      }}
+                    />
+                  )}
                 </div>
 
                 <div className="mt-4 space-y-3">
@@ -505,9 +552,14 @@ export function RoomPage() {
                       value={[currentTime]}
                       min={0}
                       max={duration || 100}
-                      step={1}
-                      onValueChange={handleTimeSeek}
-                      className="flex-1"
+                      step={0.1}
+                      onValueChange={value => {
+                        setCurrentTime(value[0]);
+                        if (isHost) handleStartSeeking();
+                      }}
+                      onValueCommit={isHost ? handleTimeSeek : () => {}}
+                      className={`flex-1 ${!isHost ? "opacity-50 cursor-not-allowed" : ""}`}
+                      disabled={!isHost}
                     />
                     <span className="text-sm">{formatTime(duration)}</span>
                   </div>
@@ -519,7 +571,8 @@ export function RoomPage() {
                         variant="outline"
                         size="icon"
                         onClick={togglePlay}
-                        disabled={!isVideoReady}
+                        disabled={!isVideoReady || !isHost}
+                        className={!isHost ? "opacity-50 cursor-not-allowed" : ""}
                       >
                         {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                       </Button>
@@ -529,17 +582,19 @@ export function RoomPage() {
                           variant="ghost"
                           size="icon"
                           onClick={toggleMute}
-                          disabled={!isVideoReady}
+                          disabled={!isVideoReady || !isHost}
+                          className={!isHost ? "opacity-50 cursor-not-allowed" : ""}
                         >
                           {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
                         </Button>
                         <Slider
-                          value={[isMuted ? 0 : volume]}
+                          value={[isMuted ? 0 : volume * 100]}
                           min={0}
                           max={100}
                           step={1}
-                          onValueChange={handleVolumeChange}
-                          className="w-24"
+                          onValueChange={isHost ? handleVolumeChange : () => {}}
+                          className={`w-24 ${!isHost ? "opacity-50 cursor-not-allowed" : ""}`}
+                          disabled={!isHost}
                         />
                       </div>
                     </div>
@@ -551,7 +606,7 @@ export function RoomPage() {
                         </Badge>
                       )}
                       {isHost && (
-                        <Badge className="bg-green-600 text-white">Host</Badge>
+                        <Badge className="bg-green-600 text-white">Host Controls Enabled</Badge>
                       )}
                     </div>
                   </div>
@@ -562,6 +617,8 @@ export function RoomPage() {
                       <summary className="cursor-pointer">Video Information</summary>
                       <p className="mt-1 break-all">URL: {room.videoUrl}</p>
                       <p className="mt-1">Status: {isVideoReady ? 'Ready' : 'Loading'}</p>
+                      <p className="mt-1">Player: ReactPlayer</p>
+                      <p className="mt-1">Control Mode: {isHost ? 'Host (Full Control)' : 'Viewer (No Control)'}</p>
                     </details>
                   </div>
                 </div>
