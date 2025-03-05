@@ -65,4 +65,3 @@ export function Header({ toggleSidebar }: HeaderProps) {
 }
 
 export default Header
-

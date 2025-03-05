@@ -17,7 +17,7 @@ export function MovieSuggestions() {
       try {
         // Using TMDb API for popular movies with your API key
         const response = await fetch(
-          `https://api.themoviedb.org/3/movie/popular?api_key=fa9851a1758dc638be1831fefc5205c1&language=en-US&page=1`
+          `https://api.themoviedb.org/3/movie/popular?api_key=fa9851a1758dc638be1831fefc5205c1&language=en-US`
         );
         
         if (!response.ok) {
@@ -25,10 +25,9 @@ export function MovieSuggestions() {
         }
         
         const data = await response.json();
-        setMovies(data.results.slice(0, 10));
+        setMovies(data.results);
       } catch (error) {
         console.error('Error fetching movies:', error);
-        // Fallback data in case API fails
         setMovies([
           { id: 1, title: 'Action Movie', poster_path: null, release_date: '2023' },
           { id: 2, title: 'Comedy Film', poster_path: null, release_date: '2022' },
@@ -100,11 +99,6 @@ export function MovieSuggestions() {
                     {movie.overview && (
                       <p className="text-xs text-gray-600 mt-2 line-clamp-2">{movie.overview}</p>
                     )}
-                  </div>
-                  <div className="p-3 pt-0">
-                    <button className="w-full bg-zinc-800 hover:bg-zinc-700 text-white text-xs py-1.5 px-3 rounded-md transition-colors">
-                      Watch Together
-                    </button>
                   </div>
                 </div>
               </CarouselItem>
