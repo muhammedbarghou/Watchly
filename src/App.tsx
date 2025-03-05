@@ -7,7 +7,7 @@ import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { Hub } from './pages/HubPage';
-import { RoomPage } from './pages/RoomPage';
+import  RoomPage  from './pages/RoomPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ResetPasswordPage } from './pages/ResetPassword';
 import { ChatPage } from './pages/ChatPage';
