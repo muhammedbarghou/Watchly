@@ -12,7 +12,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { ResetPasswordPage } from './pages/ResetPassword';
 import { ChatPage } from './pages/ChatPage';
 import { CreateRoomPage } from '@/pages/CreateRoomPage';
-import { JoinRoomPage } from './pages/JoinRoomPage';
+import  JoinRoomPage  from './pages/JoinRoomPage';
 import ErrorBoundary from './components/auth/ErrorBoundary';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { TermsOfServices } from './pages/TermsOfServices';

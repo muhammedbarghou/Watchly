@@ -1,215 +1,244 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
+import { useAuth } from '@/hooks/use-auth';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Key, Lock, Loader2, Users, ArrowRight } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { 
-  Loader2, Key, Lock, Eye, EyeOff, 
-  LogIn, Info
-} from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useRoom } from '@/hooks/useRoom';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 
-// UUID validation regex
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+interface RoomData {
+  isPrivate: boolean;
+  password?: string;
+  name: string;
+  participants: Record<string, any>;
+  settings: {
+    maxParticipants: number;
+  };
+}
 
-export function JoinRoomPage() {
+export default function JoinRoomPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [roomKey, setRoomKey] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
+  const [roomPreview, setRoomPreview] = useState<RoomData | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
 
-  const { joinRoom, loading: joiningRoom } = useRoom(roomKey || undefined);
-
-  const validateForm = () => {
-    const errors: string[] = [];
-
-    if (!currentUser) {
-      errors.push('You must be logged in to join a room');
-      errors.forEach(error => toast.error(error));
-      return false;
+  // Check room existence and get preview data
+  const checkRoom = async (key: string) => {
+    if (!key.trim()) return;
+    
+    setIsChecking(true);
+    const roomRef = doc(db, 'rooms', key);
+    
+    try {
+      const roomSnap = await getDoc(roomRef);
+      if (roomSnap.exists()) {
+        setRoomPreview(roomSnap.data() as RoomData);
+      } else {
+        setRoomPreview(null);
+      }
+    } catch (error) {
+      console.error('Error checking room:', error);
+      setRoomPreview(null);
+    } finally {
+      setIsChecking(false);
     }
-
-    if (!roomKey.trim()) {
-      errors.push('Please enter a room key');
-    } else if (!UUID_REGEX.test(roomKey.trim())) {
-      errors.push('Invalid room key format');
-    }
-
-    if (errors.length > 0) {
-      errors.forEach(error => toast.error(error));
-      return false;
-    }
-
-    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    setIsJoining(true);
 
-    setIsSubmitting(true);
+    // Check if user is logged in
+    if (!currentUser) {
+      toast.error('You must be logged in to join a room');
+      setIsJoining(false);
+      return;
+    }
+
+    // Validate room key input
+    if (!roomKey.trim()) {
+      toast.error('Room key is required');
+      setIsJoining(false);
+      return;
+    }
+
+    // Query Firestore for the room
+    const roomRef = doc(db, 'rooms', roomKey);
     try {
-      await joinRoom(password || undefined);
-      toast.success('Successfully joined the room!');
+      const roomSnap = await getDoc(roomRef);
+      if (!roomSnap.exists()) {
+        toast.error('Room does not exist');
+        setIsJoining(false);
+        return;
+      }
+
+      const roomData = roomSnap.data() as RoomData;
+      
+      // Check if room is full
+      const participantCount = Object.keys(roomData.participants || {}).length;
+      if (participantCount >= roomData.settings.maxParticipants) {
+        toast.error('Room is full');
+        setIsJoining(false);
+        return;
+      }
+
+      // Validate password if room is private
+      if (roomData.isPrivate) {
+        if (!password) {
+          toast.error('This room requires a password');
+          setIsJoining(false);
+          return;
+        }
+        if (password !== roomData.password) {
+          toast.error('Incorrect password');
+          setIsJoining(false);
+          return;
+        }
+      }
+
+      // Successfully joined the room
+      toast.success('Joined room successfully!');
       navigate(`/room/${roomKey}`);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to join room';
-      toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
+      console.error('Join room error:', error);
+      toast.error('Failed to join room. Please try again.');
+      setIsJoining(false);
     }
   };
-
-  const formVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: {
-        duration: 0.5,
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: { opacity: 1, y: 0 }
-  };
-
-  const isDisabled = isSubmitting || joiningRoom || !currentUser;
 
   return (
     <MainLayout>
-      <TooltipProvider>
-        <main className="">
-          <div className="container mx-auto px-4 py-8">
-            <motion.section 
-              initial="hidden"
-              animate="visible"
-              variants={formVariants}
-              className="max-w-3xl mx-auto"
-            >
-              <motion.header className="text-center mb-8" variants={itemVariants}>
-                <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-                  Join a Theater Room
-                </h1>
-                <p className="text-muted-foreground mt-2 max-w-xl mx-auto">
-                  Enter the room key to join a synchronized viewing experience
-                </p>
-              </motion.header>
+      <div className="container max-w-xl mx-auto py-10 px-4">
+        <Card className="border-2 border-primary/10">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl font-bold">Join Watch Party</CardTitle>
+            <CardDescription>
+              Enter the room key to join an existing watch party
+            </CardDescription>
+          </CardHeader>
 
-              <motion.form 
-                onSubmit={handleSubmit}
-                className="space-y-8 bg-card rounded-xl p-8 shadow-lg border"
-                variants={formVariants}
-              >
-                <div className="space-y-6">
-                  <motion.div variants={itemVariants}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Label htmlFor="room-key" className="text-base">Room Key</Label>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="w-4 h-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          Get the room key from the room creator
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <div className="relative mt-2">
-                      <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        id="room-key"
-                        value={roomKey}
-                        onChange={(e) => setRoomKey(e.target.value)}
-                        placeholder="Enter the 36-character room key"
-                        className="pl-11 h-12"
-                        required
-                        pattern={UUID_REGEX.source}
-                      />
-                    </div>
-                  </motion.div>
-
-                  <motion.div variants={itemVariants}>
-                    <Label htmlFor="password" className="text-base">Room Password</Label>
-                    <div className="relative mt-2">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter room password (if required)"
-                        className="pl-11 pr-11 h-12"
-                        aria-describedby="password-optional"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-2 top-1/2 -translate-y-1/2"
-                        onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? "Hide password" : "Show password"}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                    <p id="password-optional" className="text-sm text-muted-foreground mt-2">
-                      Only required for private rooms
-                    </p>
-                  </motion.div>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-6">
+              {/* Room Key Input */}
+              <div className="space-y-2">
+                <Label htmlFor="roomKey" className="text-base">Room Key</Label>
+                <div className="relative">
+                  <Key className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="roomKey"
+                    value={roomKey}
+                    onChange={(e) => {
+                      setRoomKey(e.target.value);
+                      checkRoom(e.target.value);
+                    }}
+                    placeholder="Enter the room key"
+                    disabled={isJoining}
+                    className="h-12 pl-10"
+                  />
                 </div>
+              </div>
 
-                <motion.div variants={itemVariants}>
-                  <Button 
-                    type="submit" 
-                    size="lg"
-                    className="w-full h-12 text-base"
-                    disabled={isDisabled}
-                    aria-disabled={isDisabled}
-                  >
-                    {(isSubmitting || joiningRoom) ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Joining Room...
-                      </>
-                    ) : (
-                      <>
-                        <LogIn className="w-5 h-5 mr-2" />
-                        Join Theater Room
-                      </>
-                    )}
-                  </Button>
-                  {!currentUser && (
-                    <p className="text-sm text-muted-foreground mt-3 text-center">
-                      Please login to join a room
-                    </p>
-                  )}
-                </motion.div>
-              </motion.form>
-            </motion.section>
-          </div>
-        </main>
-      </TooltipProvider>
+              {/* Password Input */}
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-base">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter room password (if required)"
+                    disabled={isJoining}
+                    className="h-12 pl-10"
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Only required for private rooms
+                </p>
+              </div>
+
+              {/* Room Preview */}
+              {roomPreview && (
+                <>
+                  <Separator />
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg">Room Preview</h3>
+                    
+                    <div className="bg-muted p-4 rounded-lg space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Room Name</span>
+                        <span className="text-sm">{roomPreview.name}</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Access Type</span>
+                        <span className="text-sm">
+                          {roomPreview.isPrivate ? (
+                            <span className="flex items-center gap-1">
+                              <Lock className="h-4 w-4" />
+                              Private
+                            </span>
+                          ) : (
+                            <span className="text-green-600">Public</span>
+                          )}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Participants</span>
+                        <span className="text-sm flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          {Object.keys(roomPreview.participants || {}).length} / {roomPreview.settings.maxParticipants}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Room Not Found Alert */}
+              {roomKey && !isChecking && !roomPreview && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    Room not found. Please check the room key and try again.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+
+            <CardFooter className="flex flex-col gap-4 px-6 pb-6">
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-base"
+                disabled={isJoining || !roomPreview}
+              >
+                {isJoining ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Joining Room...
+                  </>
+                ) : (
+                  <>
+                    Join Watch Party
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </>
+                )}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
     </MainLayout>
   );
 }
-
-export default JoinRoomPage;

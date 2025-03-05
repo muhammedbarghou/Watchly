@@ -54,14 +54,12 @@ export function CreateRoomPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
-  // Form State
   const [name, setName] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Advanced Settings
   const [description, setDescription] = useState('');
   const [maxParticipants, setMaxParticipants] = useState(10);
   const [allowSkip, setAllowSkip] = useState(true);
@@ -70,11 +68,9 @@ export function CreateRoomPage() {
   const [autoCleanup, setAutoCleanup] = useState(false);
   const [category, setCategory] = useState('general');
 
-  // Tags management
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(['watch-party']);
 
-  // Generate room key
   const key = useMemo(() => uuidv4().split('-')[0], []);
 
   const addTag = () => {
