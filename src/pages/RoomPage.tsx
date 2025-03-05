@@ -77,7 +77,6 @@ export function RoomPage() {
   const { currentUser } = useAuth();
   const playerRef = useRef<ReactPlayer>(null);
   
-  // State
   const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -88,29 +87,25 @@ export function RoomPage() {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
-  const [volume, setVolume] = useState<number>(1); // ReactPlayer uses 0-1 scale
+  const [volume, setVolume] = useState<number>(1); 
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isHost, setIsHost] = useState<boolean>(false);
   const [seeking, setSeeking] = useState<boolean>(false);
 
-  // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const syncIntervalRef = useRef<number | null>(null);
   const playerStateChangeRef = useRef<boolean>(false);
 
-  // Scroll to bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Format time (seconds) to MM:SS
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Remove the manual check as ReactPlayer handles this differently
 
   // Load room data
   useEffect(() => {
@@ -357,7 +352,6 @@ export function RoomPage() {
     setIsVideoReady(true);
     console.log("Video ready!");
     
-    // Sync with room state if available
     if (room?.currentTime && playerRef.current) {
       playerRef.current.seekTo(room.currentTime, 'seconds');
     }
@@ -397,7 +391,7 @@ export function RoomPage() {
   };
 
   const handleVolumeChange = (value: number[]) => {
-    const volumeValue = value[0] / 100; // Convert to 0-1 range for ReactPlayer
+    const volumeValue = value[0] / 100;
     setVolume(volumeValue);
     
     if (volumeValue === 0) {
@@ -411,7 +405,6 @@ export function RoomPage() {
     setIsMuted(!isMuted);
   };
 
-  // Copy room ID to clipboard
   const copyRoomId = () => {
     if (roomId) {
       navigator.clipboard.writeText(roomId);
