@@ -1,13 +1,12 @@
-import { MainLayout } from '../components/layout/MainLayout';
-import {Steps} from '../components/friends/Steps';
+import MovieSuggestions from '@/components/hub/Steps';
+import { MainLayout } from '@/components/layout/MainLayout';
 
-export function Hub() {
+export function HubPage() {
+  
   return (
     <MainLayout>
-      <div className='p-5 h-screen'>
-          <h1 className='text-2xl font-bold mb-6'>Welcome to the Main hub</h1>
-          <Steps />
-      </div>
+      <MovieSuggestions />
     </MainLayout>
   );
 }
+

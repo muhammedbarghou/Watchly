@@ -6,7 +6,7 @@ import { PrivateRoute } from './components/auth/PrivateRoute';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
-import { Hub } from './pages/HubPage';
+import { HubPage } from './pages/HubPage';
 import  RoomPage  from './pages/RoomPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ResetPasswordPage } from './pages/ResetPassword';
@@ -54,7 +54,7 @@ const routes: RouteConfig[] = [
   { path: ROUTES.LOGIN, element: <LoginPage />, isPrivate: false, title: 'Login' },
   { path: ROUTES.SIGNUP, element: <SignupPage />, isPrivate: false, title: 'Sign Up' },
   { path: ROUTES.RESET_PASSWORD, element: <ResetPasswordPage />, isPrivate: false, title: 'Reset Password' },
-  { path: ROUTES.HUB, element: <Hub />, isPrivate: true, title: 'Hub' },
+  { path: ROUTES.HUB, element: <HubPage />, isPrivate: true, title: 'Hub' },
   { path: ROUTES.FRIENDS, element: <FriendsPage />, isPrivate: true, title: 'Friends' },
   { path: ROUTES.FRIENDS_LIST, element: <FriendsList />, isPrivate: true, title: 'Friends List' },
   { path: ROUTES.JOIN_ROOM, element: <JoinRoomPage />, isPrivate: true, title: 'Join Room' },
