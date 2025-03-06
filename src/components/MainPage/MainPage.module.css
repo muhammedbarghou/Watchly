@@ -1,0 +1,25 @@
+.container {
+    padding: 20px;
+    text-align: center;
+  }
+  
+  .features {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+  }
+  
+  .feature {
+    width: 23%;
+  }
+  
+  .footer {
+    margin-top: 40px;
+    text-align: left;
+  }
+  
+  .links {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+  }

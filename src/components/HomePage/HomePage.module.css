@@ -1,0 +1,13 @@
+.container {
+    padding: 20px;
+  }
+  
+  .nav {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+  }
+  
+  .roomInfo, .jainRoom, .side {
+    margin-bottom: 20px;
+  }
