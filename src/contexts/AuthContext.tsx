@@ -19,14 +19,64 @@ import {
 } from 'firebase/firestore';
 import { auth } from '../lib/firebase';
 
+// Type for serialized timestamp - this is what we'll store in Redux
+interface SerializableTimestamp {
+  seconds: number;
+  nanoseconds: number;
+}
+
+// Helper functions to convert Timestamp objects
+const convertTimestampToSerializable = (timestamp: Timestamp | null): SerializableTimestamp | null => {
+  if (!timestamp) return null;
+  return {
+    seconds: timestamp.seconds,
+    nanoseconds: timestamp.nanoseconds,
+  };
+};
+
+// Convert Firestore document data to serializable format
+const convertDocToSerializable = (data: any): any => {
+  if (!data) return data;
+  
+  const result: any = {};
+  
+  Object.keys(data).forEach(key => {
+    const value = data[key];
+    
+    // Convert Timestamp objects
+    if (value instanceof Timestamp) {
+      result[key] = convertTimestampToSerializable(value);
+    } 
+    // Handle nested objects recursively
+    else if (value && typeof value === 'object' && !Array.isArray(value)) {
+      result[key] = convertDocToSerializable(value);
+    } 
+    // Handle arrays
+    else if (Array.isArray(value)) {
+      result[key] = value.map(item => 
+        item instanceof Timestamp 
+          ? convertTimestampToSerializable(item) 
+          : (item && typeof item === 'object' ? convertDocToSerializable(item) : item)
+      );
+    } 
+    // Pass through primitive values
+    else {
+      result[key] = value;
+    }
+  });
+  
+  return result;
+};
+
 interface UserProfile {
   uid: string;
   customUID: string;
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: SerializableTimestamp | null;  // Changed from Timestamp to SerializableTimestamp
+  updatedAt: SerializableTimestamp | null;  // Changed from Timestamp to SerializableTimestamp
+  lastSeen?: SerializableTimestamp | null;  // Added lastSeen as optional field
   provider: string;
   isOnline: boolean;
   friends: string[];
@@ -47,7 +97,7 @@ interface AuthState {
   isAuthenticated: boolean;
   currentUser: SerializableUser | null;
   userProfile: UserProfile | null;
-  loading: boolean; // Add a loading state
+  loading: boolean;
   error: string | null;
 }
 
@@ -87,6 +137,7 @@ const generateUniqueUID = async (): Promise<string> => {
   throw new Error('Failed to generate unique UID after multiple attempts');
 };
 
+// This function now returns a serializable user profile
 export const createUserDocument = async (
   user: SerializableUser,
   customUID: string,
@@ -94,22 +145,34 @@ export const createUserDocument = async (
   fullName?: string
 ): Promise<UserProfile> => {
   try {
-    const userProfile: UserProfile = {
+    // Create the Firestore document with Timestamp objects
+    const firestoreUserProfile = {
       uid: user.uid,
       customUID,
       email: user.email,
       displayName: fullName || user.displayName,
       photoURL: user.photoURL,
-      createdAt: serverTimestamp() as Timestamp,
-      updatedAt: serverTimestamp() as Timestamp,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
       provider,
       isOnline: true,
       friends: [],
       friendRequests: [],
       blockedUsers: [],
     };
-    await setDoc(doc(db, 'users', user.uid), userProfile);
-    return userProfile;
+    
+    await setDoc(doc(db, 'users', user.uid), firestoreUserProfile);
+    
+    // Get the document we just created to have actual timestamps
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    const userData = userDoc.data();
+    
+    if (!userData) {
+      throw new Error('Failed to retrieve user document after creation');
+    }
+    
+    // Convert to serializable format before returning
+    return convertDocToSerializable(userData) as UserProfile;
   } catch (error) {
     console.error('Error creating user document:', error);
     throw new Error('Failed to create user document');
@@ -139,9 +202,14 @@ export const initializeAuth = createAsyncThunk(
                   emailVerified: user.emailVerified,
                 };
 
+                // Convert Firestore data to serializable format
+                const userProfile = userDoc.exists() 
+                  ? convertDocToSerializable(userDoc.data()) as UserProfile 
+                  : null;
+
                 resolve({
                   user: serializableUser,
-                  userProfile: userDoc.exists() ? (userDoc.data() as UserProfile) : null,
+                  userProfile: userProfile,
                 });
               } catch (error) {
                 console.error('Error fetching user profile:', error);
@@ -186,7 +254,13 @@ export const signInWithEmailThunk = createAsyncThunk(
         emailVerified: result.user.emailVerified,
       };
 
-      return serializableUser;
+      // Get updated user profile
+      const updatedUserDoc = await getDoc(doc(db, 'users', result.user.uid));
+      const userProfile = updatedUserDoc.exists() 
+        ? convertDocToSerializable(updatedUserDoc.data()) as UserProfile 
+        : null;
+
+      return { user: serializableUser, userProfile };
     } catch (error) {
       return rejectWithValue('Failed to sign in with email');
     }
@@ -232,11 +306,12 @@ const handleSocialSignIn = async (
     const userRef = doc(db, 'users', user.uid);
     const userDoc = await getDoc(userRef);
 
-    let userProfile: UserProfile;
+    let firestoreUserProfile;
     if (!userDoc.exists()) {
       const customUID = await generateUniqueUID();
-      userProfile = await createUserDocument(user, customUID, provider);
+      firestoreUserProfile = await createUserDocument(user, customUID, provider);
     } else {
+      // Update the lastSeen field
       await setDoc(
         userRef,
         {
@@ -245,10 +320,13 @@ const handleSocialSignIn = async (
         },
         { merge: true }
       );
-      userProfile = userDoc.data() as UserProfile;
+      
+      // Get the updated document
+      const updatedUserDoc = await getDoc(userRef);
+      firestoreUserProfile = convertDocToSerializable(updatedUserDoc.data()) as UserProfile;
     }
 
-    return { user, userProfile };
+    return { user, userProfile: firestoreUserProfile };
   } catch (error) {
     throw new Error('Failed to handle social sign-in');
   }
@@ -331,7 +409,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   currentUser: null,
   userProfile: null,
-  loading: true, // Initialize as true
+  loading: true,
   error: null,
 };
 
@@ -342,19 +420,20 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(initializeAuth.pending, (state) => {
-        state.loading = true; // Set loading to true while initializing
+        state.loading = true;
       })
       .addCase(initializeAuth.fulfilled, (state, action) => {
         state.currentUser = action.payload.user;
         state.userProfile = action.payload.userProfile;
         state.isAuthenticated = !!action.payload.user;
-        state.loading = false; // Set loading to false after initialization
+        state.loading = false;
       })
       .addCase(initializeAuth.rejected, (state) => {
-        state.loading = false; // Set loading to false if initialization fails
+        state.loading = false;
       })
       .addCase(signInWithEmailThunk.fulfilled, (state, action) => {
-        state.currentUser = action.payload;
+        state.currentUser = action.payload.user;
+        state.userProfile = action.payload.userProfile;
         state.isAuthenticated = true;
         state.loading = false;
       })

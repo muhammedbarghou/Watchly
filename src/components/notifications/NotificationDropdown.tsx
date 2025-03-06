@@ -154,4 +154,3 @@ export function NotificationDropdown() {
     </div>
   )
 }
-
