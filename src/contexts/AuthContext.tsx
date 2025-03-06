@@ -19,13 +19,11 @@ import {
 } from 'firebase/firestore';
 import { auth } from '../lib/firebase';
 
-// Type for serialized timestamp - this is what we'll store in Redux
 interface SerializableTimestamp {
   seconds: number;
   nanoseconds: number;
 }
 
-// Helper functions to convert Timestamp objects
 const convertTimestampToSerializable = (timestamp: Timestamp | null): SerializableTimestamp | null => {
   if (!timestamp) return null;
   return {
@@ -34,7 +32,6 @@ const convertTimestampToSerializable = (timestamp: Timestamp | null): Serializab
   };
 };
 
-// Convert Firestore document data to serializable format
 const convertDocToSerializable = (data: any): any => {
   if (!data) return data;
   
@@ -43,15 +40,12 @@ const convertDocToSerializable = (data: any): any => {
   Object.keys(data).forEach(key => {
     const value = data[key];
     
-    // Convert Timestamp objects
     if (value instanceof Timestamp) {
       result[key] = convertTimestampToSerializable(value);
     } 
-    // Handle nested objects recursively
     else if (value && typeof value === 'object' && !Array.isArray(value)) {
       result[key] = convertDocToSerializable(value);
     } 
-    // Handle arrays
     else if (Array.isArray(value)) {
       result[key] = value.map(item => 
         item instanceof Timestamp 
@@ -59,7 +53,6 @@ const convertDocToSerializable = (data: any): any => {
           : (item && typeof item === 'object' ? convertDocToSerializable(item) : item)
       );
     } 
-    // Pass through primitive values
     else {
       result[key] = value;
     }
@@ -137,7 +130,6 @@ const generateUniqueUID = async (): Promise<string> => {
   throw new Error('Failed to generate unique UID after multiple attempts');
 };
 
-// This function now returns a serializable user profile
 export const createUserDocument = async (
   user: SerializableUser,
   customUID: string,
@@ -145,7 +137,6 @@ export const createUserDocument = async (
   fullName?: string
 ): Promise<UserProfile> => {
   try {
-    // Create the Firestore document with Timestamp objects
     const firestoreUserProfile = {
       uid: user.uid,
       customUID,
@@ -163,7 +154,6 @@ export const createUserDocument = async (
     
     await setDoc(doc(db, 'users', user.uid), firestoreUserProfile);
     
-    // Get the document we just created to have actual timestamps
     const userDoc = await getDoc(doc(db, 'users', user.uid));
     const userData = userDoc.data();
     
@@ -171,7 +161,6 @@ export const createUserDocument = async (
       throw new Error('Failed to retrieve user document after creation');
     }
     
-    // Convert to serializable format before returning
     return convertDocToSerializable(userData) as UserProfile;
   } catch (error) {
     console.error('Error creating user document:', error);
@@ -193,7 +182,6 @@ export const initializeAuth = createAsyncThunk(
                 const userDocRef = doc(db, 'users', user.uid);
                 const userDoc = await getDoc(userDocRef);
 
-                // Extract serializable user data
                 const serializableUser = {
                   uid: user.uid,
                   email: user.email,
@@ -202,7 +190,6 @@ export const initializeAuth = createAsyncThunk(
                   emailVerified: user.emailVerified,
                 };
 
-                // Convert Firestore data to serializable format
                 const userProfile = userDoc.exists() 
                   ? convertDocToSerializable(userDoc.data()) as UserProfile 
                   : null;
@@ -245,7 +232,6 @@ export const signInWithEmailThunk = createAsyncThunk(
         );
       }
 
-      // Extract serializable user data
       const serializableUser = {
         uid: result.user.uid,
         email: result.user.email,
@@ -254,7 +240,6 @@ export const signInWithEmailThunk = createAsyncThunk(
         emailVerified: result.user.emailVerified,
       };
 
-      // Get updated user profile
       const updatedUserDoc = await getDoc(doc(db, 'users', result.user.uid));
       const userProfile = updatedUserDoc.exists() 
         ? convertDocToSerializable(updatedUserDoc.data()) as UserProfile 
@@ -281,7 +266,6 @@ export const signUpThunk = createAsyncThunk(
         await updateProfile(user, { displayName: fullName });
       }
 
-      // Extract serializable user data
       const serializableUser = {
         uid: user.uid,
         email: user.email,
@@ -321,7 +305,6 @@ const handleSocialSignIn = async (
         { merge: true }
       );
       
-      // Get the updated document
       const updatedUserDoc = await getDoc(userRef);
       firestoreUserProfile = convertDocToSerializable(updatedUserDoc.data()) as UserProfile;
     }
@@ -339,7 +322,6 @@ export const signInWithGoogleThunk = createAsyncThunk(
       const provider = new GoogleAuthProvider();
       const { user } = await signInWithPopup(auth, provider);
 
-      // Extract serializable user data
       const serializableUser = {
         uid: user.uid,
         email: user.email,
@@ -363,7 +345,6 @@ export const signInWithFacebookThunk = createAsyncThunk(
       const provider = new FacebookAuthProvider();
       const { user } = await signInWithPopup(auth, provider);
 
-      // Extract serializable user data
       const serializableUser = {
         uid: user.uid,
         email: user.email,

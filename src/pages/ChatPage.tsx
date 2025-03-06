@@ -10,7 +10,9 @@ import {
   onSnapshot, 
   addDoc,
   orderBy, 
-  serverTimestamp 
+  serverTimestamp,
+  deleteDoc,
+  getDocs
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -41,6 +43,7 @@ interface ChatRoom {
     text: string;
     timestamp: any;
   };
+  removedBy?: string[]; // Track users who removed the chat
 }
 
 interface Friend {
@@ -76,6 +79,12 @@ export function ChatPage() {
           for (const chatDoc of snapshot.docs) {
             const chatData = chatDoc.data();
             
+            // Skip chats that the current user has removed
+            const removedBy = chatData.removedBy || [];
+            if (removedBy.includes(currentUser.uid)) {
+              continue;
+            }
+            
             chatsList.push({
               id: chatDoc.id,
               name: chatData.isGroup ? chatData.name : (
@@ -83,12 +92,19 @@ export function ChatPage() {
                 chatData.participants.find((p: any) => p.id !== currentUser.uid)?.name || 'Chat'
               ),
               participants: chatData.participants || [],
-              lastMessage: chatData.lastMessage
+              lastMessage: chatData.lastMessage,
+              removedBy: chatData.removedBy || []
             });
           }
           
           setChats(chatsList);
           setLoading(false);
+          
+          // If we have a selected chat but it's no longer in the list (e.g., it was deleted),
+          // clear the selection
+          if (selectedChat && !chatsList.some(chat => chat.id === selectedChat.id)) {
+            setSelectedChat(null);
+          }
         });
         
         return () => unsubscribe();
@@ -140,11 +156,14 @@ export function ChatPage() {
     
     fetchChats();
     fetchFriends();
-  }, [currentUser]);
+  }, [currentUser, selectedChat]);
   
   // Load messages when a chat is selected
   useEffect(() => {
-    if (!selectedChat) return;
+    if (!selectedChat) {
+      setMessages([]);
+      return;
+    }
     
     // Subscribe to messages for the selected chat
     const messagesRef = collection(db, 'chats', selectedChat.id, 'messages');
@@ -199,6 +218,19 @@ export function ChatPage() {
     if (!currentUser || participants.length === 0) return;
     
     try {
+      // Check if there's already a chat with these participants
+      if (participants.length === 1) {
+        const existingChat = chats.find(chat => 
+          chat.participants.length === 2 &&
+          chat.participants.some(p => p.id === participants[0])
+        );
+        
+        if (existingChat) {
+          setSelectedChat(existingChat);
+          return;
+        }
+      }
+      
       // Format participants for the chat document
       const participantDetails = await Promise.all(
         [...participants, currentUser.uid].map(async (userId) => {
@@ -227,7 +259,8 @@ export function ChatPage() {
         isGroup,
         createdAt: serverTimestamp(),
         participantIds: [...participants, currentUser.uid],
-        participants: participantDetails
+        participants: participantDetails,
+        removedBy: [] // Initialize empty array for tracking removals
       });
       
       // Add initial system message
@@ -244,7 +277,8 @@ export function ChatPage() {
         const newChat: ChatRoom = {
           id: chatRef.id,
           name: isGroup ? 'Group Chat' : participantDetails.find(p => p.id !== currentUser.uid)?.name || 'Chat',
-          participants: participantDetails
+          participants: participantDetails,
+          removedBy: []
         };
         
         // Select the new chat
@@ -255,6 +289,53 @@ export function ChatPage() {
     } catch (error) {
       console.error('Error creating chat:', error);
       toast.error('Failed to create chat');
+    }
+  };
+  
+  // Delete a chat
+  const handleDeleteChat = async (chatId: string) => {
+    if (!currentUser) return;
+    
+    try {
+      const chatRef = doc(db, 'chats', chatId);
+      const chatDoc = await getDoc(chatRef);
+      
+      if (!chatDoc.exists()) {
+        toast.error('Chat not found');
+        return;
+      }
+      
+      const chatData = chatDoc.data();
+      const removedBy = chatData.removedBy || [];
+      const otherParticipantIds = chatData.participantIds.filter((id: string) => id !== currentUser.uid);
+      
+      // Add current user to removedBy array
+      await updateDoc(chatRef, {
+        removedBy: [...removedBy, currentUser.uid]
+      });
+      
+      // If all participants have removed the chat, delete it from the database
+      if (removedBy.length + 1 >= chatData.participantIds.length) {
+        // Delete all messages
+        const messagesSnapshot = await getDocs(collection(db, 'chats', chatId, 'messages'));
+        const deletePromises = messagesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
+        
+        // Delete the chat document
+        await deleteDoc(chatRef);
+        
+        console.log('Chat and messages permanently deleted');
+      }
+      
+      // Clear selected chat if it was the one deleted
+      if (selectedChat && selectedChat.id === chatId) {
+        setSelectedChat(null);
+      }
+      
+      toast.success('Conversation removed');
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+      toast.error('Failed to delete conversation');
     }
   };
   
@@ -300,6 +381,7 @@ export function ChatPage() {
                 chat={selectedChat}
                 messages={messages}
                 onSendMessage={handleSendMessage}
+                onDeleteChat={handleDeleteChat}
                 currentUserId={currentUser.uid}
               />
             </div>

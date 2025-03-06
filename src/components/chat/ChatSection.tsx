@@ -1,9 +1,24 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Info, ArrowRight } from 'lucide-react';
+import { Send,  ArrowRight, Trash2, MoreVertical, X } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ChatRoom {
   id: string;
@@ -32,6 +47,7 @@ interface SimpleChatSectionProps {
   chat: ChatRoom | null;
   messages: ChatMessage[];
   onSendMessage: (text: string) => void;
+  onDeleteChat: (chatId: string) => void;
   currentUserId: string;
 }
 
@@ -39,9 +55,11 @@ export default function SimpleChatSection({
   chat,
   messages,
   onSendMessage,
+  onDeleteChat,
   currentUserId
 }: SimpleChatSectionProps) {
   const [messageText, setMessageText] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   
@@ -58,6 +76,14 @@ export default function SimpleChatSection({
     
     onSendMessage(messageText);
     setMessageText('');
+  };
+  
+  // Handle chat deletion
+  const handleDeleteChat = () => {
+    if (chat) {
+      onDeleteChat(chat.id);
+      setDeleteDialogOpen(false);
+    }
   };
   
   // Format timestamp for display
@@ -132,9 +158,43 @@ export default function SimpleChatSection({
           </p>
         </div>
         
-        <Button variant="ghost" size="icon" className="ml-auto">
-          <Info className="h-5 w-5" />
-        </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="ml-auto">
+              <MoreVertical className="h-5 w-5" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-0">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete conversation
+            </Button>
+          </PopoverContent>
+        </Popover>
+        
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will remove the conversation from your chat list. If both you and {otherParticipant?.name} delete this conversation, it will be permanently removed.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteChat}
+                className="bg-red-500 hover:bg-red-600"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
       
       {/* Messages */}
