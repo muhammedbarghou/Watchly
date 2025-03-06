@@ -1,10 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Search, UserMinus, MessageCircle, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { doc, getDoc, getFirestore } from 'firebase/firestore';
+import { 
+  doc, 
+  getDoc, 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  query, 
+  where, 
+  getDocs, 
+  serverTimestamp 
+} from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
 import { MainLayout } from '../layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface Friend {
   id: string;
@@ -19,6 +31,7 @@ export default function FriendsList() {
   const [friends, setFriends] = useState<Friend[]>([]);
   const { currentUser } = useAuth();
   const db = getFirestore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchFriends = async () => {
@@ -92,6 +105,94 @@ export default function FriendsList() {
       transition: {
         duration: 0.3
       }
+    }
+  };
+
+  // Handle starting a chat with a friend
+  const handleMessageFriend = async (friendId: string) => {
+    if (!currentUser) return;
+    
+    try {
+      // Check if there's already a chat with this friend
+      const chatsRef = collection(db, 'chats');
+      const q = query(
+        chatsRef, 
+        where('isGroup', '==', false),
+        where('participantIds', 'array-contains', currentUser.uid)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      let existingChatId = null;
+      
+      // Look for an existing chat with just these two users
+      querySnapshot.forEach(doc => {
+        const chatData = doc.data();
+        if (
+          chatData.participantIds.length === 2 && 
+          chatData.participantIds.includes(friendId)
+        ) {
+          existingChatId = doc.id;
+        }
+      });
+      
+      if (existingChatId) {
+        // Navigate to existing chat
+        navigate('/chat');
+        toast.success('Opening existing conversation');
+        return;
+      }
+      
+      // Get friend details for the chat document
+      const friendDoc = await getDoc(doc(db, 'users', friendId));
+      const currentUserDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      
+      if (!friendDoc.exists() || !currentUserDoc.exists()) {
+        toast.error('Could not create chat');
+        return;
+      }
+      
+      const friendData = friendDoc.data();
+      const userData = currentUserDoc.data();
+      
+      // Create participants array
+      const participants = [
+        {
+          id: friendId,
+          name: friendData.displayName || 'User',
+          photo: friendData.photoURL || null
+        },
+        {
+          id: currentUser.uid,
+          name: userData.displayName || 'User',
+          photo: userData.photoURL || null
+        }
+      ];
+      
+      // Create new chat
+      const chatRef = await addDoc(collection(db, 'chats'), {
+        name: friendData.displayName || 'Chat',
+        isGroup: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        participantIds: [friendId, currentUser.uid],
+        participants: participants
+      });
+      
+      // Add initial system message
+      await addDoc(collection(db, 'chats', chatRef.id, 'messages'), {
+        text: 'Chat started',
+        senderId: 'system',
+        senderName: 'System',
+        timestamp: serverTimestamp()
+      });
+      
+      // Navigate to the chat page
+      navigate('/chat');
+      toast.success(`Chat with ${friendData.displayName} started`);
+      
+    } catch (error) {
+      console.error('Error creating chat:', error);
+      toast.error('Failed to start conversation');
     }
   };
 
@@ -184,6 +285,7 @@ export default function FriendsList() {
                         whileTap={{ scale: 0.95 }}
                         className="p-3 text-gray-400 hover:text-white rounded-xl hover:bg-netflix-red/20 transition-colors"
                         title="Message friend"
+                        onClick={() => handleMessageFriend(friend.id)}
                       >
                         <MessageCircle className="w-5 h-5" />
                       </motion.button>
