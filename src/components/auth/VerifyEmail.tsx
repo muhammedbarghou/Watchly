@@ -24,7 +24,7 @@ export function VerifyEmail() {
     
     async function verifyEmailWithCode() {
       try {
-        await verifyEmail(oobCode);
+        await verifyEmail(oobCode as string);
         setVerified(true);
       } catch (error) {
         console.error('Error verifying email:', error);
