@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send,  ArrowRight, Trash2, MoreVertical, X } from 'lucide-react';
+import { Send,  ArrowRight, Trash2, MoreVertical } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -60,8 +60,25 @@ export default function SimpleChatSection({
 }: SimpleChatSectionProps) {
   const [messageText, setMessageText] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  
+  // Check for mobile view on mount and window resize
+  useEffect(() => {
+    const checkMobileView = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+    
+    // Initial check
+    checkMobileView();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkMobileView);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', checkMobileView);
+  }, []);
   
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -149,9 +166,9 @@ export default function SimpleChatSection({
           )}
         </Avatar>
         
-        <div className="flex-1">
-          <h3 className="font-semibold">{chat.name}</h3>
-          <p className="text-xs text-muted-foreground">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold truncate">{chat.name}</h3>
+          <p className="text-xs text-muted-foreground truncate">
             {chat.participants.length > 2 
               ? `${chat.participants.length} participants` 
               : 'Active now'}
@@ -164,7 +181,7 @@ export default function SimpleChatSection({
               <MoreVertical className="h-5 w-5" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-48 p-0">
+          <PopoverContent className="w-48 p-0" align={isMobileView ? "end" : "center"}>
             <Button 
               variant="ghost" 
               className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
@@ -177,18 +194,18 @@ export default function SimpleChatSection({
         </Popover>
         
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
+          <AlertDialogContent className={isMobileView ? "w-[90%] max-w-md" : ""}>
             <AlertDialogHeader>
               <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
               <AlertDialogDescription>
                 This will remove the conversation from your chat list. If both you and {otherParticipant?.name} delete this conversation, it will be permanently removed.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogFooter className={isMobileView ? "flex-col space-y-2" : ""}>
+              <AlertDialogCancel className={isMobileView ? "w-full mt-0" : ""}>Cancel</AlertDialogCancel>
               <AlertDialogAction 
                 onClick={handleDeleteChat}
-                className="bg-red-500 hover:bg-red-600"
+                className={`bg-red-500 hover:bg-red-600 ${isMobileView ? "w-full" : ""}`}
               >
                 Delete
               </AlertDialogAction>
@@ -219,7 +236,7 @@ export default function SimpleChatSection({
                 <div className="flex justify-center">
                   <div className="bg-muted px-3 py-1 rounded-full text-xs text-muted-foreground">
                     {new Date(date).toLocaleDateString(undefined, {
-                      weekday: 'long',
+                      weekday: isMobileView ? 'short' : 'long',
                       month: 'short',
                       day: 'numeric'
                     })}
@@ -245,9 +262,9 @@ export default function SimpleChatSection({
                       key={message.id} 
                       className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className="flex max-w-[70%]">
+                      <div className={`flex ${isMobileView ? 'max-w-[85%]' : 'max-w-[70%]'}`}>
                         {!isCurrentUser && (
-                          <Avatar className="h-8 w-8 mr-2 mt-1">
+                          <Avatar className={`${isMobileView ? 'h-6 w-6' : 'h-8 w-8'} mr-2 mt-1`}>
                             {message.senderPhoto ? (
                               <AvatarImage src={message.senderPhoto} alt={message.senderName} />
                             ) : (
@@ -265,7 +282,7 @@ export default function SimpleChatSection({
                             </p>
                           )}
                           
-                          <div className={`rounded-2xl px-4 py-2 ${
+                          <div className={`rounded-2xl px-3 py-2 ${isMobileView ? 'text-sm' : ''} ${
                             isCurrentUser 
                               ? 'bg-primary text-primary-foreground' 
                               : 'bg-muted'
@@ -297,8 +314,19 @@ export default function SimpleChatSection({
             onChange={(e) => setMessageText(e.target.value)}
             className="flex-1"
           />
-          <Button type="submit" size="icon" disabled={!messageText.trim()}>
-            <Send className="h-4 w-4" />
+          <Button 
+            type="submit" 
+            size={isMobileView ? "default" : "icon"} 
+            disabled={!messageText.trim()}
+          >
+            {isMobileView ? (
+              <>
+                <Send className="h-4 w-4 mr-2" />
+                Send
+              </>
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </form>
       </div>

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, Plus, MessageSquare } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Plus, MessageSquare, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -58,6 +58,23 @@ export default function SimpleChatSidebar({
   const [searchQuery, setSearchQuery] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
+  const [isMobileView, setIsMobileView] = useState(false);
+
+  // Check for mobile view on mount and window resize
+  useEffect(() => {
+    const checkMobileView = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+    
+    // Initial check
+    checkMobileView();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkMobileView);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', checkMobileView);
+  }, []);
 
   // Filter chats based on search query
   const filteredChats = chats.filter(chat =>
@@ -117,9 +134,18 @@ export default function SimpleChatSidebar({
                 <Plus className="h-5 w-5" />
               </Button>
             </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
+            <DialogContent className={isMobileView ? "w-[95vw] max-w-md" : ""}>
+              <DialogHeader className="flex flex-row items-center justify-between">
                 <DialogTitle>New Message</DialogTitle>
+                {isMobileView && (
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    onClick={() => setDialogOpen(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </DialogHeader>
               
               <div className="mt-4">
@@ -127,7 +153,7 @@ export default function SimpleChatSidebar({
                   Select friends to message
                 </p>
                 
-                <ScrollArea className="h-64 pr-4">
+                <ScrollArea className={`${isMobileView ? 'h-[50vh]' : 'h-64'} pr-4`}>
                   {friends.length === 0 ? (
                     <p className="text-center text-muted-foreground p-4">
                       No friends found. Add friends to start a conversation.
@@ -175,10 +201,11 @@ export default function SimpleChatSidebar({
                 </ScrollArea>
               </div>
               
-              <DialogFooter className="mt-4">
+              <DialogFooter className={`mt-4 ${isMobileView ? 'flex-col' : ''}`}>
                 <Button 
                   onClick={handleCreateChat} 
                   disabled={selectedFriends.length === 0}
+                  className={isMobileView ? "w-full" : ""}
                 >
                   Start Chat
                 </Button>

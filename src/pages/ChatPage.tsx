@@ -19,7 +19,7 @@ import { useAuth } from '@/hooks/use-auth';
 import SimpleChatSidebar from '@/components/chat/ChatSideBar';
 import SimpleChatSection from '@/components/chat/ChatSection';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 
 // Simple interfaces to model our data
 interface ChatMessage {
@@ -61,6 +61,33 @@ export function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [isMobileView, setIsMobileView] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+  
+  // Check for mobile view on mount and window resize
+  useEffect(() => {
+    const checkMobileView = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+    
+    // Initial check
+    checkMobileView();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkMobileView);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', checkMobileView);
+  }, []);
+  
+  // Adjust sidebar visibility based on selection and view
+  useEffect(() => {
+    if (isMobileView && selectedChat) {
+      setShowSidebar(false);
+    } else if (!isMobileView) {
+      setShowSidebar(true);
+    }
+  }, [selectedChat, isMobileView]);
   
   // Fetch user's chats
   useEffect(() => {
@@ -184,6 +211,16 @@ export function ChatPage() {
   // Handle selecting a chat
   const handleSelectChat = (chat: ChatRoom) => {
     setSelectedChat(chat);
+    if (isMobileView) {
+      setShowSidebar(false);
+    }
+  };
+  
+  // Handle going back to chat list in mobile view
+  const handleBackToList = () => {
+    if (isMobileView) {
+      setShowSidebar(true);
+    }
   };
   
   // Send a message
@@ -227,6 +264,9 @@ export function ChatPage() {
         
         if (existingChat) {
           setSelectedChat(existingChat);
+          if (isMobileView) {
+            setShowSidebar(false);
+          }
           return;
         }
       }
@@ -283,6 +323,9 @@ export function ChatPage() {
         
         // Select the new chat
         setSelectedChat(newChat);
+        if (isMobileView) {
+          setShowSidebar(false);
+        }
       }
       
       toast.success(isGroup ? 'Group chat created' : 'Chat started');
@@ -330,6 +373,9 @@ export function ChatPage() {
       // Clear selected chat if it was the one deleted
       if (selectedChat && selectedChat.id === chatId) {
         setSelectedChat(null);
+        if (isMobileView) {
+          setShowSidebar(true);
+        }
       }
       
       toast.success('Conversation removed');
@@ -358,7 +404,7 @@ export function ChatPage() {
   
   return (
     <MainLayout>
-      <div className="flex h-[calc(100vh-64px)]">
+      <div className="flex h-[calc(100vh-64px)] relative">
         {loading ? (
           <div className="flex items-center justify-center w-full">
             <Loader2 className="w-6 h-6 animate-spin mr-2" />
@@ -366,7 +412,16 @@ export function ChatPage() {
           </div>
         ) : (
           <>
-            <div className="w-80 border-r h-full">
+            {/* Sidebar - fullscreen on mobile when visible */}
+            <div 
+              className={`${
+                isMobileView 
+                  ? showSidebar 
+                    ? 'fixed inset-0 z-20 bg-background' 
+                    : 'hidden'
+                  : 'w-80 border-r'
+              } h-full`}
+            >
               <SimpleChatSidebar 
                 chats={chats}
                 selectedChat={selectedChat}
@@ -376,7 +431,26 @@ export function ChatPage() {
                 currentUserId={currentUser.uid}
               />
             </div>
-            <div className="flex-1 h-full">
+            
+            {/* Chat section */}
+            <div 
+              className={`${
+                isMobileView 
+                  ? !showSidebar 
+                    ? 'fixed inset-0 z-20 bg-background' 
+                    : 'hidden'
+                  : 'flex-1'
+              } h-full`}
+            >
+              {selectedChat && isMobileView && !showSidebar && (
+                <button 
+                  onClick={handleBackToList}
+                  className="flex items-center p-2 text-sm font-medium"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  Back to chats
+                </button>
+              )}
               <SimpleChatSection
                 chat={selectedChat}
                 messages={messages}
