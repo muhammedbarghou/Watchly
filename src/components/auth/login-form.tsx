@@ -1,101 +1,138 @@
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuth } from '@/hooks/use-auth'
-import { SocialAuthButtons } from './SocialAuthButtons'
-import { setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
-import { AlertCircle, Eye, EyeOff } from 'lucide-react'
+import { SocialAuthButtons } from '@/components/auth/SocialAuthButtons'
+import { useState } from 'react'
+import { AlertCircle, EyeOff, Eye, Mail } from 'lucide-react'
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 const loginSchema = z.object({
   email: z.string()
-    .min(1, 'Email is required')
-    .email('Please enter a valid email address'),
+    .email('Please enter a valid email address')
+    .min(1, 'Email is required'),
   password: z.string()
-    .min(1, 'Password is required')
-    .min(6, 'Password must be at least 6 characters'),
+    .min(1, 'Password is required'),
 });
 
-interface LoginFormData {
-  email: string
-  password: string
-}
+type LoginFormData = z.infer<typeof loginSchema>;
 
-export function LoginForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"form">) {
-  const navigate = useNavigate()
-  const { signInWithEmail, signInWithGoogle, signInWithFacebook, loading, error } = useAuth()
-  const [authError, setAuthError] = useState<string | null>(null)
-  const [rememberMe, setRememberMe] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+export function LoginForm() {
+  const navigate = useNavigate();
+  const { signInWithEmail, signInWithGoogle, signInWithFacebook, sendEmailVerification, clearError } = useAuth();
+  const [error, setError] = useState<string>('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>('');
 
-  const { 
-    register, 
-    handleSubmit, 
-    formState: { errors, dirtyFields } 
-  } = useForm<LoginFormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     mode: 'onChange'
-  })
-
-  const handleSocialSignIn = async (provider: 'google' | 'facebook') => {
-    try {
-      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence)
-      
-      setAuthError(null)
-      const signInMethod = provider === 'google' ? signInWithGoogle : signInWithFacebook;
-      await signInMethod();
-      navigate('/hub')
-    } catch (err: any) {
-      const errorMessage = err instanceof Error 
-        ? err.message 
-        : `Failed to sign in with ${provider}`
-      setAuthError(errorMessage)
-    }
-  }
+  });
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence)
+      setError('');
+      clearError();
+      setUserEmail(data.email);
       
-      setAuthError(null)
-      await signInWithEmail(data.email, data.password)
-      navigate('/friends')
+      await signInWithEmail(data.email, data.password);
+      navigate('/hub');
     } catch (err: any) {
-      const errorMessage = err instanceof Error 
-        ? err.message 
-        : 'An unexpected error occurred during login'
-      setAuthError(errorMessage)
+      console.error('Login error:', err);
+      
+      // Check if error message is about email verification
+      if (err.message && err.message.includes('verify your email')) {
+        setNeedsVerification(true);
+      } else {
+        setError(err.message || 'Failed to sign in. Please try again.');
+      }
     }
+  };
+
+  const handleSocialSignIn = async (provider: 'google' | 'facebook') => {
+    try {
+      setError('');
+      clearError();
+      
+      const signInMethod = provider === 'google' ? signInWithGoogle : signInWithFacebook;
+      await signInMethod();
+      navigate('/hub');
+    } catch (err: any) {
+      console.error(`${provider} sign in error:`, err);
+      
+      // Check if error message is about email verification
+      if (err.message && err.message.includes('verify your email')) {
+        setNeedsVerification(true);
+      } else {
+        setError(`Failed to sign in with ${provider}. Please try again.`);
+      }
+    }
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      await sendEmailVerification();
+      setError('');
+      // Show success message
+      alert('Verification email sent. Please check your inbox.');
+    } catch (err: any) {
+      console.error('Error sending verification email:', err);
+      setError('Failed to send verification email. Please try again.');
+    }
+  };
+
+  // Show verification needed screen
+  if (needsVerification) {
+    return (
+      <div className="flex flex-col items-center gap-6 p-6 text-center">
+        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gray-800">
+          <Mail className="h-8 w-8 text-netflix-red" />
+        </div>
+        
+        <h1 className="text-2xl font-bold text-white">Email verification required</h1>
+        
+        <p className="text-balance text-sm text-muted-foreground max-w-md">
+          You need to verify your email address before signing in. Please check your inbox for a verification link.
+        </p>
+        
+        <div className="flex flex-col gap-2 w-full max-w-xs">
+          <Button 
+            onClick={handleResendVerification}
+            variant="outline" 
+            className="w-full border-white/20 text-white hover:bg-white/10"
+          >
+            Resend verification email
+          </Button>
+          
+          <Button 
+            onClick={() => setNeedsVerification(false)}
+            className="w-full bg-netflix-red hover:bg-netflix-red/90"
+          >
+            Try another account
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <form 
-      onSubmit={handleSubmit(onSubmit)} 
-      className={cn("flex flex-col gap-6", className)} 
-      {...props}
-    >
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold text-white">Login to your account</h1>
+        <h1 className="text-2xl font-bold text-white">Sign in to your account</h1>
         <p className="text-balance text-sm text-muted-foreground">
-          Enter your email below to login to your account
+          Welcome back! Enter your details to access your account
         </p>
       </div>
-      
-      {(authError || error) && (
+
+      {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{authError || error}</AlertDescription>
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
@@ -107,8 +144,8 @@ export function LoginForm({
             type="email" 
             placeholder="m@example.com" 
             {...register('email')}
-            disabled={loading}
-            className={`text-white ${errors.email ? 'border-red-500' : dirtyFields.email ? 'border-green-500' : ''}`}
+            disabled={isSubmitting}
+            className="text-white"
           />
           {errors.email && (
             <p className="text-red-500 text-sm flex items-center gap-1">
@@ -117,14 +154,11 @@ export function LoginForm({
             </p>
           )}
         </div>
-        
+
         <div className="grid gap-2">
-          <div className="flex items-center">
+          <div className="flex items-center justify-between">
             <Label htmlFor="password" className="text-white">Password</Label>
-            <a
-              href="/reset-password"
-              className="ml-auto text-sm underline-offset-4 hover:underline text-netflix-red"
-            >
+            <a href="/forgot-password" className="text-sm text-netflix-red hover:underline">
               Forgot password?
             </a>
           </div>
@@ -132,10 +166,10 @@ export function LoginForm({
             <Input 
               id="password" 
               type={showPassword ? "text" : "password"}
-              placeholder="********" 
+              placeholder="********"
               {...register('password')}
-              disabled={loading}
-              className={`text-white pr-10 ${errors.password ? 'border-red-500' : dirtyFields.password ? 'border-green-500' : ''}`}
+              disabled={isSubmitting}
+              className="text-white pr-10"
             />
             <button
               type="button"
@@ -153,42 +187,27 @@ export function LoginForm({
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Checkbox 
-            id="rememberMe"
-            checked={rememberMe}
-            onCheckedChange={(checked) => setRememberMe(!!checked)}
-            disabled={loading}
-          />
-          <Label 
-            htmlFor="rememberMe" 
-            className="text-white text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-          >
-            Keep me signed in
-          </Label>
-        </div>
-        
         <Button 
           type="submit" 
-          className="w-full bg-netflix-red hover:bg-netflix-red/90" 
-          disabled={loading}
+          className="w-full bg-netflix-red hover:bg-netflix-red/90"
+          disabled={isSubmitting}
         >
-          {loading ? 'Signing in...' : 'Sign In'}
+          {isSubmitting ? 'Signing In...' : 'Sign In'}
         </Button>
         
         <SocialAuthButtons
           onGoogleClick={() => handleSocialSignIn('google')}
           onFacebookClick={() => handleSocialSignIn('facebook')}
-          disabled={loading}
+          disabled={isSubmitting}
         />
       </div>
-      
+
       <div className="text-center text-sm text-white">
-        Don&apos;t have an account?{" "}
+        Don't have an account?{' '}
         <a href="/signup" className="underline underline-offset-4 text-netflix-red hover:text-netflix-red/80">
           Sign up
         </a>
       </div>
     </form>
-  )
+  );
 }

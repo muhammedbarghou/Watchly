@@ -5,6 +5,9 @@ import {
   signInWithGoogleThunk,
   signInWithFacebookThunk,
   logoutThunk,
+  sendEmailVerificationThunk,
+  verifyEmailThunk,
+  clearAuthError,
 } from '@/contexts/AuthContext';
 
 export function useAuth() {
@@ -13,6 +16,7 @@ export function useAuth() {
   const userProfile = useAppSelector((state) => state.auth.userProfile);
   const loading = useAppSelector((state) => state.auth.loading);
   const error = useAppSelector((state) => state.auth.error);
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
   const signInWithEmail = (email: string, password: string) =>
     dispatch(signInWithEmailThunk({ email, password }));
@@ -23,16 +27,26 @@ export function useAuth() {
   const signInWithGoogle = () => dispatch(signInWithGoogleThunk());
   const signInWithFacebook = () => dispatch(signInWithFacebookThunk());
   const logout = () => dispatch(logoutThunk());
+  
+  // Email verification functions
+  const sendEmailVerification = () => dispatch(sendEmailVerificationThunk());
+  const verifyEmail = (actionCode: string) => dispatch(verifyEmailThunk(actionCode));
+  const clearError = () => dispatch(clearAuthError());
 
   return {
     currentUser,
     userProfile,
     loading,
     error,
+    isAuthenticated,
     signInWithEmail,
     signUp,
     signInWithGoogle,
     signInWithFacebook,
     logout,
+    sendEmailVerification,
+    verifyEmail,
+    clearError,
+    isEmailVerified: currentUser?.emailVerified || false,
   };
 }

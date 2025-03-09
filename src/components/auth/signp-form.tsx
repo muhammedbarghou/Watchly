@@ -8,8 +8,9 @@ import { z } from 'zod'
 import { useAuth } from '@/hooks/use-auth'
 import { SocialAuthButtons } from '@/components/auth/SocialAuthButtons'
 import { useState } from 'react'
-import { AlertCircle, Check, EyeOff, Eye } from 'lucide-react'
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle, Check, EyeOff, Eye, Mail } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { toast } from 'sonner'
 
 const passwordRequirements = {
   minLength: 8,
@@ -40,10 +41,12 @@ type SignupFormData = z.infer<typeof signupSchema>;
 
 export function SignForm() {
   const navigate = useNavigate();
-  const { signUp, signInWithGoogle, signInWithFacebook } = useAuth();
+  const { signUp, signInWithGoogle, signInWithFacebook, sendEmailVerification, clearError } = useAuth();
   const [error, setError] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>('');
 
   const { register, handleSubmit, formState: { errors, isSubmitting, dirtyFields }, watch } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -61,8 +64,17 @@ export function SignForm() {
   const onSubmit = async (data: SignupFormData) => {
     try {
       setError('');
+      clearError();
+      setUserEmail(data.email);
+      
+      // Create the account
       await signUp(data.email, data.password, data.fullName);
-      navigate('/friends');
+      
+      // Send verification email
+      await sendEmailVerification();
+      
+      // Show verification screen
+      setVerificationSent(true);
     } catch (err: any) {
       console.error('Signup error:', err);
       setError(err.message || 'Failed to create account. Please try again.');
@@ -72,14 +84,72 @@ export function SignForm() {
   const handleSocialSignIn = async (provider: 'google' | 'facebook') => {
     try {
       setError('');
+      clearError();
+      
+      // Sign in with social provider
       const signInMethod = provider === 'google' ? signInWithGoogle : signInWithFacebook;
       await signInMethod();
-      navigate('/hub');
+      
+      // Check if email verification is needed
+      // Note: This is handled in the thunk now, which redirects authenticated users
+      // or shows error if email verification is needed
     } catch (err: any) {
       console.error(`${provider} sign in error:`, err);
       setError(`Failed to sign in with ${provider}. Please try again.`);
     }
   };
+
+  const handleResendVerification = async () => {
+    try {
+      await sendEmailVerification();
+      toast.success('Verification email resent. Please check your inbox.');
+    } catch (err: any) {
+      console.error('Error resending verification:', err);
+      setError('Failed to resend verification email. Please try again.');
+    }
+  };
+
+  // If verification email is sent, show verification screen
+  if (verificationSent) {
+    return (
+      <div className="flex flex-col items-center gap-6 p-6 text-center">
+        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gray-800">
+          <Mail className="h-8 w-8 text-netflix-red" />
+        </div>
+        
+        <h1 className="text-2xl font-bold text-white">Verify your email</h1>
+        
+        <p className="text-balance text-sm text-muted-foreground max-w-md">
+          We've sent a verification link to <span className="font-medium text-white">{userEmail}</span>. 
+          Please check your inbox and click the link to verify your account.
+        </p>
+        
+        <Alert className="bg-blue-900/30 border-blue-700 max-w-md">
+          <AlertTitle className="text-blue-400">Important</AlertTitle>
+          <AlertDescription className="text-blue-300">
+            You won't be able to sign in until you verify your email address.
+          </AlertDescription>
+        </Alert>
+        
+        <div className="flex flex-col gap-2 w-full max-w-xs">
+          <Button 
+            onClick={handleResendVerification}
+            variant="outline" 
+            className="w-full border-white/20 text-white hover:bg-white/10"
+          >
+            Resend verification email
+          </Button>
+          
+          <Button 
+            onClick={() => navigate('/login')}
+            className="w-full bg-netflix-red hover:bg-netflix-red/90"
+          >
+            Go to login
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
@@ -201,6 +271,13 @@ export function SignForm() {
             </p>
           )}
         </div>
+
+        <Alert className="bg-blue-900/30 border-blue-700">
+          <AlertCircle className="h-4 w-4 text-blue-400" />
+          <AlertDescription className="text-blue-300">
+            You'll need to verify your email address before you can use the app.
+          </AlertDescription>
+        </Alert>
 
         <div className="text-white text-sm">
           By clicking the button below, you agree to our{' '}

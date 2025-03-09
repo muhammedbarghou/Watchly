@@ -8,6 +8,8 @@ import {
   signOut,
   updateProfile,
   onAuthStateChanged,
+  sendEmailVerification as firebaseSendEmailVerification,
+  applyActionCode,
 } from 'firebase/auth';
 import {
   doc,
@@ -67,14 +69,15 @@ interface UserProfile {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  createdAt: SerializableTimestamp | null;  // Changed from Timestamp to SerializableTimestamp
-  updatedAt: SerializableTimestamp | null;  // Changed from Timestamp to SerializableTimestamp
-  lastSeen?: SerializableTimestamp | null;  // Added lastSeen as optional field
+  createdAt: SerializableTimestamp | null;  
+  updatedAt: SerializableTimestamp | null;  
+  lastSeen?: SerializableTimestamp | null;  
   provider: string;
   isOnline: boolean;
   friends: string[];
   friendRequests: string[];
   blockedUsers: string[];
+  emailVerified: boolean; // Added emailVerified field
 }
 
 interface SerializableUser {
@@ -150,6 +153,7 @@ export const createUserDocument = async (
       friends: [],
       friendRequests: [],
       blockedUsers: [],
+      emailVerified: user.emailVerified, // Add email verification status
     };
     
     await setDoc(doc(db, 'users', user.uid), firestoreUserProfile);
@@ -190,9 +194,24 @@ export const initializeAuth = createAsyncThunk(
                   emailVerified: user.emailVerified,
                 };
 
-                const userProfile = userDoc.exists() 
+                let userProfile = userDoc.exists() 
                   ? convertDocToSerializable(userDoc.data()) as UserProfile 
                   : null;
+                
+                // Update emailVerified status in database if it has changed
+                if (userProfile && userProfile.emailVerified !== user.emailVerified) {
+                  await setDoc(
+                    doc(db, 'users', user.uid),
+                    { emailVerified: user.emailVerified },
+                    { merge: true }
+                  );
+                  
+                  // Refresh user profile data
+                  const updatedUserDoc = await getDoc(userDocRef);
+                  userProfile = updatedUserDoc.exists() 
+                    ? convertDocToSerializable(updatedUserDoc.data()) as UserProfile 
+                    : null;
+                }
 
                 resolve({
                   user: serializableUser,
@@ -219,6 +238,13 @@ export const signInWithEmailThunk = createAsyncThunk(
   async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Check if email is verified
+      if (!result.user.emailVerified) {
+        await signOut(auth);
+        return rejectWithValue('Please verify your email before signing in. Check your inbox for a verification link.');
+      }
+      
       const userDoc = await getDoc(doc(db, 'users', result.user.uid));
 
       if (userDoc.exists()) {
@@ -227,6 +253,7 @@ export const signInWithEmailThunk = createAsyncThunk(
           {
             isOnline: true,
             lastSeen: serverTimestamp(),
+            emailVerified: result.user.emailVerified, // Update verification status
           },
           { merge: true }
         );
@@ -246,8 +273,17 @@ export const signInWithEmailThunk = createAsyncThunk(
         : null;
 
       return { user: serializableUser, userProfile };
-    } catch (error) {
-      return rejectWithValue('Failed to sign in with email');
+    } catch (error: any) {
+      let message = 'Failed to sign in with email';
+      
+      // Handle specific Firebase error codes
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        message = 'Invalid email or password';
+      } else if (error.code === 'auth/too-many-requests') {
+        message = 'Too many unsuccessful login attempts. Please try again later.';
+      }
+      
+      return rejectWithValue(message);
     }
   }
 );
@@ -275,9 +311,72 @@ export const signUpThunk = createAsyncThunk(
       };
 
       const userProfile = await createUserDocument(serializableUser, customUID, 'email', fullName);
+      
+      // Don't send verification email here - we'll do it in a separate action
+      
       return { user: serializableUser, userProfile };
+    } catch (error: any) {
+      let message = 'Failed to sign up';
+      
+      // Handle specific Firebase error codes
+      if (error.code === 'auth/email-already-in-use') {
+        message = 'This email is already registered. Please use a different email or try logging in.';
+      } else if (error.code === 'auth/invalid-email') {
+        message = 'Invalid email format. Please enter a valid email address.';
+      } else if (error.code === 'auth/weak-password') {
+        message = 'Password is too weak. Please use a stronger password.';
+      }
+      
+      return rejectWithValue(message);
+    }
+  }
+);
+
+// New thunk to send email verification
+export const sendEmailVerificationThunk = createAsyncThunk(
+  'auth/sendEmailVerification',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const currentUser = auth.currentUser;
+      
+      if (!currentUser) {
+        return rejectWithValue('No user is currently signed in');
+      }
+      
+      await firebaseSendEmailVerification(currentUser);
+      return true;
+    } catch (error: any) {
+      console.error('Error sending verification email:', error);
+      return rejectWithValue('Failed to send verification email. Please try again later.');
+    }
+  }
+);
+
+// New thunk to verify email with action code
+export const verifyEmailThunk = createAsyncThunk(
+  'auth/verifyEmail',
+  async (actionCode: string, { rejectWithValue }) => {
+    try {
+      await applyActionCode(auth, actionCode);
+      
+      // Reload the user to get updated emailVerified status
+      if (auth.currentUser) {
+        await auth.currentUser.reload();
+        
+        // Update the user profile in Firestore
+        if (auth.currentUser.uid) {
+          await setDoc(
+            doc(db, 'users', auth.currentUser.uid),
+            { emailVerified: true },
+            { merge: true }
+          );
+        }
+      }
+      
+      return true;
     } catch (error) {
-      return rejectWithValue('Failed to sign up');
+      console.error('Error verifying email:', error);
+      return rejectWithValue('Failed to verify email. The link may be invalid or expired.');
     }
   }
 );
@@ -295,12 +394,13 @@ const handleSocialSignIn = async (
       const customUID = await generateUniqueUID();
       firestoreUserProfile = await createUserDocument(user, customUID, provider);
     } else {
-      // Update the lastSeen field
+      // Update the lastSeen field and emailVerified status
       await setDoc(
         userRef,
         {
           isOnline: true,
           lastSeen: serverTimestamp(),
+          emailVerified: user.emailVerified,
         },
         { merge: true }
       );
@@ -331,9 +431,23 @@ export const signInWithGoogleThunk = createAsyncThunk(
       };
 
       const { userProfile } = await handleSocialSignIn(serializableUser, 'google');
+      
+      // For Google sign-in, we typically don't need to verify the email
+      // as Google has already verified it, but we can check if needed
+      if (!user.emailVerified) {
+        await firebaseSendEmailVerification(user);
+        return rejectWithValue('Please verify your email before signing in. Check your inbox for a verification link.');
+      }
+      
       return { user: serializableUser, userProfile };
-    } catch (error) {
-      return rejectWithValue('Failed to sign in with Google');
+    } catch (error: any) {
+      let message = 'Failed to sign in with Google';
+      
+      if (error.code === 'auth/popup-closed-by-user') {
+        message = 'Sign in was cancelled. Please try again.';
+      }
+      
+      return rejectWithValue(message);
     }
   }
 );
@@ -354,9 +468,22 @@ export const signInWithFacebookThunk = createAsyncThunk(
       };
 
       const { userProfile } = await handleSocialSignIn(serializableUser, 'facebook');
+      
+      // For Facebook sign-in, we might need to verify the email if Facebook didn't
+      if (!user.emailVerified && user.email) {
+        await firebaseSendEmailVerification(user);
+        return rejectWithValue('Please verify your email before signing in. Check your inbox for a verification link.');
+      }
+      
       return { user: serializableUser, userProfile };
-    } catch (error) {
-      return rejectWithValue('Failed to sign in with Facebook');
+    } catch (error: any) {
+      let message = 'Failed to sign in with Facebook';
+      
+      if (error.code === 'auth/popup-closed-by-user') {
+        message = 'Sign in was cancelled. Please try again.';
+      }
+      
+      return rejectWithValue(message);
     }
   }
 );
@@ -397,7 +524,11 @@ const initialState: AuthState = {
 const authSlice = createSlice({
   name: 'auth',
   initialState,
-  reducers: {},
+  reducers: {
+    clearAuthError: (state) => {
+      state.error = null;
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(initializeAuth.pending, (state) => {
@@ -436,6 +567,18 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.loading = false;
       })
+      .addCase(sendEmailVerificationThunk.fulfilled, (state) => {
+        // No need to update state here
+      })
+      .addCase(verifyEmailThunk.fulfilled, (state) => {
+        // Update the email verification status if the user is already logged in
+        if (state.currentUser) {
+          state.currentUser.emailVerified = true;
+        }
+        if (state.userProfile) {
+          state.userProfile.emailVerified = true;
+        }
+      })
       .addCase(logoutThunk.fulfilled, (state) => {
         state.currentUser = null;
         state.userProfile = null;
@@ -459,4 +602,5 @@ const authSlice = createSlice({
   },
 });
 
+export const { clearAuthError } = authSlice.actions;
 export default authSlice.reducer;
