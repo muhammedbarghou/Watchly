@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Search, Bell, Moon, Menu, Send } from "lucide-react";
-import "./ChatPage.css";
+import "../styles/ChatPage.css";
 
 const ChatPage = () => {
   const [message, setMessage] = useState("");

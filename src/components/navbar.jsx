@@ -1,5 +1,5 @@
 import React from 'react';
-import logo from '../imges/Watchly V3 no bg.png';
+import logo from '../assets/Watchly.png';
 import '../styles/Navbar.css'
 function Navbar() {
     return(

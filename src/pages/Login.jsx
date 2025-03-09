@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import '../styles/SignUpForm.css'; // Import the CSS file
-import '../styles/Navbar.css';
-import Navbar from '../componenets/navbar';
+import '../styles/SignUpForm.css';
+import Navbar from '../components/navbar';
 
 
 const MainPage = () => {
