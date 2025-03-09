@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Home, Users, Copy, PhoneCall } from 'lucide-react';
+import { LogOut, Users, Copy, PhoneCall } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from "../ui/theme-toggle"
@@ -66,25 +66,7 @@ const RoomNavbar: React.FC<RoomNavbarProps> = ({
 
   return (
     <header className="border-b border-border px-4 h-16 flex items-center justify-between shrink-0 bg-background z-10">
-      <div className="flex items-center gap-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => navigate('/')}
-                className="mr-1"
-              >
-                <Home className="h-5 w-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Go Home</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        
+      <div className="flex items-center gap-2">        
         <img src={logo || "/placeholder.svg"} alt="Logo" className="h-6 sm:h-7 hidden dark:block" />
         <img src={logo2 || "/placeholder.svg"} alt="Logo" className="h-6 sm:h-7 dark:hidden" />
         

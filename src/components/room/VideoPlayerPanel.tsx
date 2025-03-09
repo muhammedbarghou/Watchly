@@ -36,7 +36,7 @@ interface VideoPlayerProps {
   isHost: boolean;
   initialTime?: number;
   initialPlaying?: boolean;
-  bufferWindow?: number; // Seconds to ignore small time differences
+  bufferWindow?: number;
   onError?: (error: any) => void;
 }
 
@@ -47,10 +47,9 @@ const VideoPlayer = ({
   isHost,
   initialTime = 0,
   initialPlaying = false,
-  bufferWindow = 2, // Default to 2 seconds
+  bufferWindow = 2,
   onError
 }: VideoPlayerProps) => {
-  // Player state
   const playerRef = useRef<ReactPlayer>(null);
   const [isVideoReady, setIsVideoReady] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(initialPlaying);
@@ -70,14 +69,11 @@ const VideoPlayer = ({
   const lastUpdateRef = useRef<number>(Date.now());
   const syncIntervalRef = useRef<number | null>(null);
 
-  // Set isHostRef on mount/updates
   useEffect(() => {
     isHostRef.current = isHost;
-    // Debug host status
     console.log('Host status in OptimizedVideoPlayer:', isHost);
   }, [isHost]);
 
-  // Format time (seconds) to MM:SS
   const formatTime = (seconds: number): string => {
     if (isNaN(seconds)) return '00:00';
     const mins = Math.floor(seconds / 60);
@@ -85,7 +81,6 @@ const VideoPlayer = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Subscribe to room state updates
   useEffect(() => {
     if (!documentId) return;
 
