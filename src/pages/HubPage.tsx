@@ -7,6 +7,9 @@ import {
   CarouselItem,
 } from '@/components/ui/carousel';
 import MainLayout from '@/components/layout/MainLayout';
+import { TranslatedText } from '@/hooks/useTranslation';
+import { useAppSelector } from '@/store/Store';
+import { selectLanguage, selectIsTranslationAvailable } from '@/slices/languageSlice';
 
 // TypeScript interfaces for media items
 interface MovieItem {
@@ -41,6 +44,8 @@ interface MediaCardProps {
 
 // Media Item Card Component
 const MediaCard: React.FC<MediaCardProps> = ({ item }) => {
+  const isTranslationAvailable = useAppSelector(selectIsTranslationAvailable);
+
   return (
     <div className="group flex flex-col h-full overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 transition-all hover:shadow-md">
       <div className="relative aspect-[2/3] w-full bg-gray-100 overflow-hidden">
@@ -52,7 +57,12 @@ const MediaCard: React.FC<MediaCardProps> = ({ item }) => {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-200 p-3">
-            <span className="text-gray-500 text-xs font-medium text-center">{item.title || item.name}</span>
+            <span className="text-gray-500 text-xs font-medium text-center">
+              {isTranslationAvailable ? 
+                <TranslatedText text={item.title || item.name || ''} /> : 
+                (item.title || item.name)
+              }
+            </span>
           </div>
         )}
         <div className="absolute top-1 right-1 bg-yellow-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-md flex items-center">
@@ -63,13 +73,23 @@ const MediaCard: React.FC<MediaCardProps> = ({ item }) => {
         </div>
       </div>
       <div className="p-2 flex-grow flex flex-col">
-        <h3 className="font-medium text-xs line-clamp-1">{item.title || item.name}</h3>
+        <h3 className="font-medium text-xs line-clamp-1">
+          {isTranslationAvailable ? 
+            <TranslatedText text={item.title || item.name || ''} /> : 
+            (item.title || item.name)
+          }
+        </h3>
         <p className="text-xs text-gray-500 mt-0.5">
           {item.release_date ? new Date(item.release_date).getFullYear() : 
            item.first_air_date ? new Date(item.first_air_date).getFullYear() : ''}
         </p>
         {(item.overview) && (
-          <p className="text-xs text-gray-600 mt-1 line-clamp-2">{item.overview}</p>
+          <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+            {isTranslationAvailable ? 
+              <TranslatedText text={item.overview} /> : 
+              item.overview
+            }
+          </p>
         )}
       </div>
     </div>
@@ -86,16 +106,22 @@ interface MediaCarouselProps {
 
 // Media Carousel Component
 const MediaCarousel: React.FC<MediaCarouselProps> = ({ title, items, loading, isMovie = true }) => {
+  const isTranslationAvailable = useAppSelector(selectIsTranslationAvailable);
+  
   if (loading) {
     return (
       <div className="w-full py-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold">{title}</h2>
+          <h2 className="text-lg font-bold">
+            {isTranslationAvailable ? <TranslatedText text={title} /> : title}
+          </h2>
         </div>
         <div className="flex justify-center items-center h-40 border border-dashed rounded-lg border-gray-300 dark:border-gray-700">
           <div className="text-center">
             <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-primary" />
-            <p className="text-xs text-gray-500">Loading...</p>
+            <p className="text-xs text-gray-500">
+              {isTranslationAvailable ? <TranslatedText text="Loading..." /> : "Loading..."}
+            </p>
           </div>
         </div>
       </div>
@@ -105,7 +131,9 @@ const MediaCarousel: React.FC<MediaCarouselProps> = ({ title, items, loading, is
   return (
     <div className="w-full py-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-bold">{title}</h2>
+        <h2 className="text-lg font-bold">
+          {isTranslationAvailable ? <TranslatedText text={title} /> : title}
+        </h2>
       </div>
       <div className="relative w-full">
         <Carousel>
@@ -129,6 +157,9 @@ const MediaCarousel: React.FC<MediaCarouselProps> = ({ title, items, loading, is
 
 // Main Component
 export function HubPage(): JSX.Element {
+  // Get current language from Redux
+  const language = useAppSelector(selectLanguage);
+  
   // State for each category
   const [topRatedMovies, setTopRatedMovies] = useState<MovieItem[]>([]);
   const [popularMovies, setPopularMovies] = useState<MovieItem[]>([]);
@@ -143,13 +174,42 @@ export function HubPage(): JSX.Element {
 
   // API Key
   const API_KEY = 'fa9851a1758dc638be1831fefc5205c1';
+  
+  // Convert language code to TMDB format (DeepL uses uppercase, TMDB uses lowercase with region)
+  const getTMDBLanguage = (langCode: string): string => {
+    // Map of DeepL language codes to TMDB language codes
+    const languageMap: Record<string, string> = {
+      'EN': 'en-US',
+      'DE': 'de-DE',
+      'FR': 'fr-FR',
+      'ES': 'es-ES',
+      'IT': 'it-IT',
+      'NL': 'nl-NL',
+      'PL': 'pl-PL',
+      'PT': 'pt-PT',
+      'RU': 'ru-RU',
+      'JA': 'ja-JP',
+      'ZH': 'zh-CN'
+    };
+    
+    return languageMap[langCode] || 'en-US';
+  };
+  
+  // Get current TMDB language setting
+  const tmdbLanguage = getTMDBLanguage(language);
 
   useEffect(() => {
+    // Reset loading states when language changes
+    setLoadingTopMovies(true);
+    setLoadingPopularMovies(true);
+    setLoadingTopTV(true);
+    setLoadingPopularTV(true);
+    
     // Fetch Top Rated Movies
     const fetchTopRatedMovies = async () => {
       try {
         const response = await fetch(
-          `https://api.themoviedb.org/3/movie/top_rated?api_key=${API_KEY}&language=en-US&page=1`
+          `https://api.themoviedb.org/3/movie/top_rated?api_key=${API_KEY}&language=${tmdbLanguage}&page=1`
         );
         
         if (!response.ok) {
@@ -171,7 +231,7 @@ export function HubPage(): JSX.Element {
     const fetchPopularMovies = async () => {
       try {
         const response = await fetch(
-          `https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=en-US&page=1`
+          `https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=${tmdbLanguage}&page=1`
         );
         
         if (!response.ok) {
@@ -192,7 +252,7 @@ export function HubPage(): JSX.Element {
     const fetchTopRatedTVShows = async () => {
       try {
         const response = await fetch(
-          `https://api.themoviedb.org/3/tv/top_rated?api_key=${API_KEY}&language=en-US&page=1`
+          `https://api.themoviedb.org/3/tv/top_rated?api_key=${API_KEY}&language=${tmdbLanguage}&page=1`
         );
         
         if (!response.ok) {
@@ -213,7 +273,7 @@ export function HubPage(): JSX.Element {
     const fetchPopularTVShows = async () => {
       try {
         const response = await fetch(
-          `https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=en-US&page=1`
+          `https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=${tmdbLanguage}&page=1`
         );
         
         if (!response.ok) {
@@ -249,34 +309,34 @@ export function HubPage(): JSX.Element {
     fetchPopularMovies();
     fetchTopRatedTVShows();
     fetchPopularTVShows();
-  }, []);
+  }, [language, tmdbLanguage]); // Re-fetch when language changes
 
   return (
     <MainLayout>
       <div className="w-full space-y-6">
         <MediaCarousel 
-          title="Best Movies of All Time" 
+          title="Best Movies of All Time"
           items={topRatedMovies} 
           loading={loadingTopMovies} 
           isMovie={true}
         />
         
         <MediaCarousel 
-          title="Popular Movies" 
+          title="Popular Movies"
           items={popularMovies} 
           loading={loadingPopularMovies} 
           isMovie={true}
         />
         
         <MediaCarousel 
-          title="Best TV Shows" 
+          title="Best TV Shows"
           items={topRatedTVShows} 
           loading={loadingTopTV} 
           isMovie={false}
         />
         
         <MediaCarousel 
-          title="Popular TV Shows" 
+          title="Popular TV Shows"
           items={popularTVShows} 
           loading={loadingPopularTV} 
           isMovie={false}

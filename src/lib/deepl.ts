@@ -75,6 +75,7 @@ export const translateWithCache = async (
 // Available languages in DeepL
 export const availableLanguages: Language[] = [
   { code: 'EN', name: 'English' },
+  { code: 'AR', name: 'Arabic' },
   { code: 'DE', name: 'German' },
   { code: 'FR', name: 'French' },
   { code: 'ES', name: 'Spanish' },
