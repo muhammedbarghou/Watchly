@@ -1,10 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
 import authReducer from '@/contexts/AuthContext';
+import languageReducer from '@/slices/languageSlice';
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
+    language: languageReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -12,7 +14,8 @@ export const store = configureStore({
         ignoredActionPaths: [
         ],
         ignoredPaths: [
-          'auth.userProfile.createdAt'
+          'auth.userProfile.createdAt',
+          // Add any non-serializable paths from language state if needed
         ],
       },
     }),

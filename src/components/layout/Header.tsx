@@ -6,6 +6,8 @@ import SearchComponent from "../user/SearchUsers"
 import logo from "../../assets/logo.png"
 import logo2 from "../../assets/Logo2.png"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import LanguageSettings from '@/components/LanguageSettings';
+
 
 interface HeaderProps {
   toggleSidebar: () => void
@@ -55,6 +57,7 @@ export function Header({ toggleSidebar }: HeaderProps) {
 
           {/* Theme Toggle and Notifications */}
           <div className="flex items-center gap-2 sm:gap-4">
+            <LanguageSettings />
             <ThemeToggle />
             <NotificationDropdown />
           </div>
