@@ -13,7 +13,8 @@ import {
   deleteDoc,
   setDoc,
   updateDoc,
-  Timestamp 
+  Timestamp,
+  arrayUnion
 } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { db } from '@/lib/firebase';
@@ -47,6 +48,12 @@ interface RoomUser {
   isMuted?: boolean;
 }
 
+interface VideoQueueItem {
+  videoUrl: string;
+  addedBy: string;
+  addedAt: Timestamp | null;
+}
+
 interface Room {
   roomId: string;
   name: string;
@@ -58,6 +65,7 @@ interface Room {
   currentTime?: number;
   isPlaying?: boolean;
   voiceChatEnabled?: boolean;
+  videoQueue?: VideoQueueItem[];
 }
 
 interface LocationState {
@@ -81,6 +89,7 @@ export function RoomPage() {
   const [showParticipantsPanel, setShowParticipantsPanel] = useState<boolean>(false);
   const [showVoiceChatPanel, setShowVoiceChatPanel] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [videoQueue, setVideoQueue] = useState<VideoQueueItem[]>([]);
 
   // Load room data
   useEffect(() => {
@@ -99,6 +108,7 @@ export function RoomPage() {
           setRoom(state.roomData);
           setDocumentId(state.documentId);
           setIsHost(state.roomData.createdBy === currentUser.uid || state.roomData.createdBy === currentUser.displayName);
+          setVideoQueue(state.roomData.videoQueue || []);
           setLoading(false);
         } else if (roomId) {
           // Otherwise query Firebase for the room
@@ -117,6 +127,7 @@ export function RoomPage() {
           setRoom(roomData);
           setDocumentId(roomDoc.id);
           setIsHost(roomData.createdBy === currentUser.uid || roomData.createdBy === currentUser.displayName);
+          setVideoQueue(roomData.videoQueue || []);
           setLoading(false);
         }
       } catch (error) {
@@ -128,6 +139,24 @@ export function RoomPage() {
 
     loadRoom();
   }, [roomId, currentUser, navigate, location]);
+
+  // Subscribe to room data changes
+  useEffect(() => {
+    if (!documentId) return;
+
+    const roomRef = doc(db, 'rooms', documentId);
+    const unsubscribeRoom = onSnapshot(roomRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const roomData = snapshot.data() as Room;
+        setRoom(roomData);
+        setVideoQueue(roomData.videoQueue || []);
+      }
+    });
+
+    return () => {
+      unsubscribeRoom();
+    };
+  }, [documentId]);
 
   // Setup listeners for messages and users
   useEffect(() => {
@@ -221,6 +250,27 @@ export function RoomPage() {
     };
   }, [documentId, currentUser, isHost]);
 
+  // Initialize video queue if not present
+  useEffect(() => {
+    const initVideoQueue = async () => {
+      if (!documentId || !isHost || !room) return;
+      
+      // Only initialize if this is a new room without videoQueue
+      if (room.videoQueue === undefined) {
+        try {
+          await updateDoc(doc(db, 'rooms', documentId), {
+            videoQueue: [],
+            updatedAt: serverTimestamp(),
+          });
+        } catch (error) {
+          console.error('Error initializing video queue:', error);
+        }
+      }
+    };
+    
+    initVideoQueue();
+  }, [documentId, isHost, room]);
+
   // Initialize voice chat if new room
   useEffect(() => {
     const initVoiceChat = async () => {
@@ -241,6 +291,58 @@ export function RoomPage() {
     
     initVoiceChat();
   }, [documentId, isHost, room]);
+
+  // Handle setting next video
+  const handleSetNextVideo = async (videoUrl: string, playImmediately: boolean) => {
+    if (!documentId || !currentUser || !room) {
+      throw new Error('Room data not available');
+    }
+
+    try {
+      const roomRef = doc(db, 'rooms', documentId);
+
+      if (playImmediately) {
+        // Update the current video URL and reset playback state
+        await updateDoc(roomRef, {
+          videoUrl: videoUrl,
+          currentTime: 0,
+          isPlaying: true,
+          updatedAt: serverTimestamp(),
+        });
+
+        // Add system message
+        await addDoc(collection(db, 'rooms', documentId, 'messages'), {
+          text: `${currentUser.displayName || 'Anonymous'} changed the video to a new one`,
+          sender: 'system',
+          senderDisplayName: 'System',
+          timestamp: serverTimestamp(),
+        });
+      } else {
+        // Add to queue
+        const newQueueItem: VideoQueueItem = {
+          videoUrl: videoUrl,
+          addedBy: currentUser.displayName || 'Anonymous',
+          addedAt: Timestamp.now(),
+        };
+
+        await updateDoc(roomRef, {
+          videoQueue: arrayUnion(newQueueItem),
+          updatedAt: serverTimestamp(),
+        });
+
+        // Add system message
+        await addDoc(collection(db, 'rooms', documentId, 'messages'), {
+          text: `${currentUser.displayName || 'Anonymous'} added a video to the queue`,
+          sender: 'system',
+          senderDisplayName: 'System',
+          timestamp: serverTimestamp(),
+        });
+      }
+    } catch (error) {
+      console.error('Error setting next video:', error);
+      throw new Error('Failed to set next video');
+    }
+  };
 
   // Handle leaving the room
   const handleLeaveRoom = async () => {
@@ -291,6 +393,36 @@ export function RoomPage() {
     toast.error('Error playing video. Please check the URL.');
   };
 
+  // Handle video ended - play next from queue if available
+  const handleVideoEnded = async () => {
+    if (!isHost || !documentId || !room || videoQueue.length === 0) return;
+
+    try {
+      const nextVideo = videoQueue[0];
+      const updatedQueue = videoQueue.slice(1); // Remove the first item
+      
+      // Update the current video URL and reset playback state
+      await updateDoc(doc(db, 'rooms', documentId), {
+        videoUrl: nextVideo.videoUrl,
+        videoQueue: updatedQueue,
+        currentTime: 0,
+        isPlaying: true,
+        updatedAt: serverTimestamp(),
+      });
+
+      // Add system message
+      await addDoc(collection(db, 'rooms', documentId, 'messages'), {
+        text: `Now playing next video from queue (added by ${nextVideo.addedBy})`,
+        sender: 'system',
+        senderDisplayName: 'System',
+        timestamp: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error playing next video:', error);
+      toast.error('Failed to play next video from queue');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col h-screen">
@@ -336,6 +468,8 @@ export function RoomPage() {
         voiceChatPanelOpen={showVoiceChatPanel}
         voiceChatEnabled={room.voiceChatEnabled}
         voiceChatActiveUsers={activeUsers.filter(user => user.isInVoiceChat).length}
+        isHost={isHost}
+        onSetNextVideo={handleSetNextVideo}
       />
 
       {/* Main content area */}
@@ -381,7 +515,9 @@ export function RoomPage() {
               initialTime={room.currentTime}
               initialPlaying={room.isPlaying}
               onError={handleVideoError}
+              onEnded={handleVideoEnded}
               bufferWindow={3} // Add buffer window to prevent excessive syncing (3 seconds)
+              queueCount={videoQueue.length}
             />
           </div>
 

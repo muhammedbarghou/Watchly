@@ -1,4 +1,4 @@
-import  { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import ReactPlayer from 'react-player';
 import { 
   doc, 
@@ -17,6 +17,7 @@ import {
   RefreshCw,
   SkipForward,
   SkipBack,
+  ListVideo
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -38,6 +39,8 @@ interface VideoPlayerProps {
   initialPlaying?: boolean;
   bufferWindow?: number;
   onError?: (error: any) => void;
+  onEnded?: () => void;
+  queueCount?: number;
 }
 
 const VideoPlayer = ({
@@ -48,7 +51,9 @@ const VideoPlayer = ({
   initialTime = 0,
   initialPlaying = false,
   bufferWindow = 2,
-  onError
+  onError,
+  onEnded,
+  queueCount = 0
 }: VideoPlayerProps) => {
   const playerRef = useRef<ReactPlayer>(null);
   const [isVideoReady, setIsVideoReady] = useState<boolean>(false);
@@ -62,17 +67,27 @@ const VideoPlayer = ({
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [lastSyncTime, setLastSyncTime] = useState<number>(Date.now());
   const [syncInProgress, setSyncInProgress] = useState<boolean>(false);
+  const [hasEnded, setHasEnded] = useState<boolean>(false);
 
   // Refs for tracking state changes to prevent loops
   const isHostRef = useRef<boolean>(isHost);
   const playerStateChangeRef = useRef<boolean>(false);
   const lastUpdateRef = useRef<number>(Date.now());
   const syncIntervalRef = useRef<number | null>(null);
+  const videoUrlRef = useRef<string>(videoUrl);
 
   useEffect(() => {
     isHostRef.current = isHost;
     console.log('Host status in OptimizedVideoPlayer:', isHost);
   }, [isHost]);
+
+  // Reset ended state when video URL changes
+  useEffect(() => {
+    if (videoUrl !== videoUrlRef.current) {
+      setHasEnded(false);
+      videoUrlRef.current = videoUrl;
+    }
+  }, [videoUrl]);
 
   const formatTime = (seconds: number): string => {
     if (isNaN(seconds)) return '00:00';
@@ -214,6 +229,7 @@ const VideoPlayer = ({
   const handleReady = () => {
     setIsVideoReady(true);
     console.log("Video player ready!");
+    setHasEnded(false);
     
     // Sync with initial state
     if (initialTime && playerRef.current) {
@@ -225,6 +241,16 @@ const VideoPlayer = ({
     console.error("ReactPlayer error:", error);
     if (onError) onError(error);
     toast.error("Error loading video. Please check if the URL is valid and accessible.");
+  };
+
+  const handleVideoEnded = () => {
+    console.log("Video ended");
+    setHasEnded(true);
+    
+    // Only process ended event if we're the host and haven't already processed it
+    if (isHost && onEnded && !hasEnded) {
+      onEnded();
+    }
   };
 
   const handleStartSeeking = () => {
@@ -346,6 +372,7 @@ const VideoPlayer = ({
           onError={handleError}
           onBuffer={() => handleBuffering(true)}
           onBufferEnd={() => handleBuffering(false)}
+          onEnded={handleVideoEnded}
           onPlay={() => {
             if (!isHost) {
               if (playerRef.current && !isPlaying) {
@@ -525,6 +552,23 @@ const VideoPlayer = ({
             </div>
             
             <div className="flex items-center gap-2">
+              {/* Queue Badge */}
+              {queueCount > 0 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1 cursor-default">
+                        <ListVideo className="h-4 w-4" />
+                        <Badge variant="secondary">{queueCount}</Badge>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{queueCount} {queueCount === 1 ? 'video' : 'videos'} in queue</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+
               {!isHost && (
                 <Badge variant="outline" className="ml-auto">
                   {isPlaying ? 'Playing' : 'Paused'}
@@ -572,6 +616,7 @@ const VideoPlayer = ({
             <p className="mt-1">Player: ReactPlayer</p>
             <p className="mt-1">Control Mode: {isHost ? 'Host (Full Control)' : 'Viewer (No Control)'}</p>
             <p className="mt-1">Buffer Window: {bufferWindow}s</p>
+            <p className="mt-1">Queue: {queueCount} videos</p>
           </details>
         </CardContent>
       </Card>
