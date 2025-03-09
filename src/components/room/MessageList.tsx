@@ -86,7 +86,7 @@ const MessageList: React.FC<MessageListProps> = ({
       lastGroup[0].sender !== message.sender ||
       (lastGroup[lastGroup.length - 1].timestamp && 
        message.timestamp && 
-       message.timestamp.toMillis() - lastGroup[lastGroup.length - 1].timestamp.toMillis() > 120000)
+       message.timestamp.toMillis() - (lastGroup[lastGroup.length - 1].timestamp?.toMillis() || 0) > 120000)
     ) {
       groups.push([message]);
     } else {

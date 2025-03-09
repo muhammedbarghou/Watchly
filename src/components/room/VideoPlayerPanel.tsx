@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import  { useState, useRef, useEffect } from 'react';
 import ReactPlayer from 'react-player';
 import { 
   doc, 
   updateDoc, 
-  serverTimestamp 
+  serverTimestamp,
+  onSnapshot 
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -15,7 +16,7 @@ import {
   Maximize, 
   RefreshCw,
   SkipForward,
-  SkipBack
+  SkipBack,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -28,25 +29,27 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-interface VideoPlayerPanelProps {
+interface VideoPlayerProps {
   videoUrl: string;
   roomId: string;
   documentId: string;
   isHost: boolean;
   initialTime?: number;
   initialPlaying?: boolean;
+  bufferWindow?: number; // Seconds to ignore small time differences
   onError?: (error: any) => void;
 }
 
-const VideoPlayerPanel: React.FC<VideoPlayerPanelProps> = ({
+const VideoPlayer = ({
   videoUrl,
   roomId,
   documentId,
   isHost,
   initialTime = 0,
   initialPlaying = false,
+  bufferWindow = 2, // Default to 2 seconds
   onError
-}) => {
+}: VideoPlayerProps) => {
   // Player state
   const playerRef = useRef<ReactPlayer>(null);
   const [isVideoReady, setIsVideoReady] = useState<boolean>(false);
@@ -58,23 +61,90 @@ const VideoPlayerPanel: React.FC<VideoPlayerPanelProps> = ({
   const [seeking, setSeeking] = useState<boolean>(false);
   const [bufferingState, setBufferingState] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [lastSyncTime, setLastSyncTime] = useState<number>(Date.now());
+  const [syncInProgress, setSyncInProgress] = useState<boolean>(false);
 
   // Refs for tracking state changes to prevent loops
+  const isHostRef = useRef<boolean>(isHost);
   const playerStateChangeRef = useRef<boolean>(false);
+  const lastUpdateRef = useRef<number>(Date.now());
   const syncIntervalRef = useRef<number | null>(null);
+
+  // Set isHostRef on mount/updates
+  useEffect(() => {
+    isHostRef.current = isHost;
+    // Debug host status
+    console.log('Host status in OptimizedVideoPlayer:', isHost);
+  }, [isHost]);
 
   // Format time (seconds) to MM:SS
   const formatTime = (seconds: number): string => {
+    if (isNaN(seconds)) return '00:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Subscribe to room state updates
+  useEffect(() => {
+    if (!documentId) return;
+
+    const roomRef = doc(db, 'rooms', documentId);
+    const unsubscribeRoom = onSnapshot(roomRef, (snapshot) => {
+      if (!snapshot.exists() || syncInProgress) return;
+
+      const roomData = snapshot.data();
+      
+      // Only update if we're not the host or if we didn't just make a change
+      if (!isHostRef.current || !playerStateChangeRef.current) {
+        // Handle play/pause state
+        if (roomData.isPlaying !== undefined && roomData.isPlaying !== isPlaying) {
+          setIsPlaying(roomData.isPlaying);
+        }
+        
+        // Handle seeking, but only if the difference is significant
+        if (roomData.currentTime !== undefined && playerRef.current) {
+          const currentPlayerTime = playerRef.current.getCurrentTime();
+          const timeDiff = Math.abs(currentPlayerTime - roomData.currentTime);
+          
+          // Only seek if difference is more than buffer window and we're not already seeking
+          if (timeDiff > bufferWindow && !seeking) {
+            // Before seeking, check if we've synced recently
+            const now = Date.now();
+            if (now - lastSyncTime > 1000) { // Only sync at most once per second
+              setLastSyncTime(now);
+              setSyncInProgress(true);
+              
+              // Use setTimeout to avoid rapid seek commands
+              setTimeout(() => {
+                if (playerRef.current) {
+                  console.log(`Syncing time: ${currentPlayerTime} -> ${roomData.currentTime}`);
+                  playerRef.current.seekTo(roomData.currentTime, 'seconds');
+                  setCurrentTime(roomData.currentTime);
+                }
+                setSyncInProgress(false);
+              }, 100);
+            }
+          }
+        }
+      }
+      
+      // Reset flag after processing
+      playerStateChangeRef.current = false;
+    });
+
+    return () => unsubscribeRoom();
+  }, [documentId, isPlaying, seeking, bufferWindow, lastSyncTime, syncInProgress]);
+
   // Sync video state periodically if host
   useEffect(() => {
     if (isHost && isVideoReady && documentId) {
       syncIntervalRef.current = window.setInterval(() => {
-        if (playerRef.current) {
+        const now = Date.now();
+        // Only update if we haven't updated in the last 5 seconds and player exists
+        if (now - lastUpdateRef.current > 5000 && playerRef.current) {
+          lastUpdateRef.current = now;
+          
           updateDoc(doc(db, 'rooms', documentId), {
             currentTime: playerRef.current.getCurrentTime(),
             isPlaying: isPlaying,
@@ -83,7 +153,7 @@ const VideoPlayerPanel: React.FC<VideoPlayerPanelProps> = ({
             console.error('Error syncing video state:', error);
           });
         }
-      }, 5000); // Sync every 5 seconds
+      }, 5000); // Check every 5 seconds
     }
 
     return () => {
@@ -99,6 +169,7 @@ const VideoPlayerPanel: React.FC<VideoPlayerPanelProps> = ({
     
     playerStateChangeRef.current = true;
     setIsPlaying(!isPlaying);
+    lastUpdateRef.current = Date.now();
     
     try {
       await updateDoc(doc(db, 'rooms', documentId), {
@@ -121,6 +192,7 @@ const VideoPlayerPanel: React.FC<VideoPlayerPanelProps> = ({
     playerStateChangeRef.current = true;
     setCurrentTime(newTime);
     playerRef.current.seekTo(newTime, 'seconds');
+    lastUpdateRef.current = Date.now();
     
     try {
       await updateDoc(doc(db, 'rooms', documentId), {
@@ -146,6 +218,7 @@ const VideoPlayerPanel: React.FC<VideoPlayerPanelProps> = ({
 
   const handleReady = () => {
     setIsVideoReady(true);
+    console.log("Video player ready!");
     
     // Sync with initial state
     if (initialTime && playerRef.current) {
@@ -156,15 +229,15 @@ const VideoPlayerPanel: React.FC<VideoPlayerPanelProps> = ({
   const handleError = (error: any) => {
     console.error("ReactPlayer error:", error);
     if (onError) onError(error);
-    toast.error("Error loading video. Check if the URL is valid and accessible.");
+    toast.error("Error loading video. Please check if the URL is valid and accessible.");
   };
 
   const handleStartSeeking = () => {
     setSeeking(true);
   };
 
-  const handleTimeSeek = (value: number[]) => {
-    if (!documentId) return;
+  const handleTimeSeek = async (value: number[]) => {
+    if (!documentId || !isHost) return;
     
     const seekTime = value[0];
     setCurrentTime(seekTime);
@@ -173,15 +246,17 @@ const VideoPlayerPanel: React.FC<VideoPlayerPanelProps> = ({
       playerRef.current.seekTo(seekTime, 'seconds');
     }
     
-    if (isHost) {
-      playerStateChangeRef.current = true;
-      
-      updateDoc(doc(db, 'rooms', documentId), {
+    playerStateChangeRef.current = true;
+    lastUpdateRef.current = Date.now();
+    
+    try {
+      await updateDoc(doc(db, 'rooms', documentId), {
         currentTime: seekTime,
         updatedAt: serverTimestamp(),
-      }).catch(error => {
-        console.error('Error updating time:', error);
       });
+    } catch (error) {
+      console.error('Error updating time:', error);
+      toast.error('Failed to update playback position');
     }
     
     setSeeking(false);
@@ -231,11 +306,31 @@ const VideoPlayerPanel: React.FC<VideoPlayerPanelProps> = ({
 
   const handleRefresh = () => {
     if (playerRef.current) {
-      // Reload the player
+      // Store current state
       const currentTime = playerRef.current.getCurrentTime();
-      playerRef.current.seekTo(currentTime, 'seconds');
+      const wasPlaying = isPlaying;
+      
+      // Force a reload of the player
+      setIsVideoReady(false);
+      // Small timeout to ensure the player has time to reset
+      setTimeout(() => {
+        if (playerRef.current) {
+          playerRef.current.seekTo(currentTime, 'seconds');
+          if (wasPlaying && isHost) {
+            setIsPlaying(true);
+          }
+        }
+        setIsVideoReady(true);
+      }, 100);
+      
       toast.info("Video player refreshed");
     }
+  };
+
+  // Handle buffering
+  const handleBuffering = (buffering: boolean) => {
+    console.log("Buffering state changed:", buffering);
+    setBufferingState(buffering);
   };
 
   return (
@@ -254,8 +349,8 @@ const VideoPlayerPanel: React.FC<VideoPlayerPanelProps> = ({
           onProgress={handleProgress}
           onDuration={handleDuration}
           onError={handleError}
-          onBufferEnd={() => setBufferingState(false)}
-          onBuffer={() => setBufferingState(true)}
+          onBuffer={() => handleBuffering(true)}
+          onBufferEnd={() => handleBuffering(false)}
           onPlay={() => {
             if (!isHost) {
               if (playerRef.current && !isPlaying) {
@@ -284,7 +379,8 @@ const VideoPlayerPanel: React.FC<VideoPlayerPanelProps> = ({
                 disablekb: !isHost ? 1 : 0,
                 modestbranding: 1,
                 origin: window.location.origin,
-                controls: 0 // Hide YouTube's own controls
+                controls: 0, // Hide YouTube's own controls
+                playsinline: 1
               }
             },
             file: {
@@ -477,8 +573,10 @@ const VideoPlayerPanel: React.FC<VideoPlayerPanelProps> = ({
             <summary className="cursor-pointer">Video Information</summary>
             <p className="mt-1 break-all">URL: {videoUrl}</p>
             <p className="mt-1">Status: {isVideoReady ? 'Ready' : 'Loading'}</p>
+            <p className="mt-1">Buffering: {bufferingState ? 'Yes' : 'No'}</p>
             <p className="mt-1">Player: ReactPlayer</p>
             <p className="mt-1">Control Mode: {isHost ? 'Host (Full Control)' : 'Viewer (No Control)'}</p>
+            <p className="mt-1">Buffer Window: {bufferWindow}s</p>
           </details>
         </CardContent>
       </Card>
@@ -486,4 +584,4 @@ const VideoPlayerPanel: React.FC<VideoPlayerPanelProps> = ({
   );
 };
 
-export default VideoPlayerPanel;
+export default VideoPlayer;

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { Bell } from "lucide-react"
-import { DropdownMenu } from "../ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "../ui/dropdown-menu"
 import { NotificationItem } from "./NotificationItem"
-import { collection, query, where, onSnapshot, updateDoc, doc, getDoc, deleteDoc } from "firebase/firestore"
+import { collection, query, where, onSnapshot, updateDoc, doc, getDoc, deleteDoc, Timestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/hooks/use-auth"
 
@@ -13,13 +13,13 @@ interface FriendRequest {
   recipientId: string
   senderId: string
   status: string
-  timestamp: any
+  timestamp: Timestamp
   senderName?: string
   senderPhotoURL?: string
 }
 
 export function NotificationDropdown() {
-  const [isOpen, setIsOpen] = useState(false)
+  const [open, setOpen] = useState(false)
   const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([])
   const { currentUser } = useAuth()
 
@@ -32,7 +32,7 @@ export function NotificationDropdown() {
     const unsubscribe = onSnapshot(q, async (querySnapshot) => {
       const requests: FriendRequest[] = []
 
-      for (const docSnapshot of querySnapshot.docs) {
+      const fetchPromises = querySnapshot.docs.map(async (docSnapshot) => {
         const request = docSnapshot.data() as FriendRequest
         request.id = docSnapshot.id
 
@@ -45,10 +45,11 @@ export function NotificationDropdown() {
           request.senderPhotoURL = senderData.photoURL || ""
         }
 
-        requests.push(request)
-      }
+        return request
+      })
 
-      setFriendRequests(requests)
+      const results = await Promise.all(fetchPromises)
+      setFriendRequests(results)
     })
 
     return () => unsubscribe()
@@ -115,16 +116,16 @@ export function NotificationDropdown() {
   }
 
   return (
-    <div className="relative">
-      <button
-        className="p-2 hover:bg-gray-200 dark:hover:bg-netflix-gray rounded-lg relative transition-colors duration-200 ease-in-out"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <Bell className="w-6 h-6 dark:text-gray-400" />
-        {friendRequests.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-netflix-red rounded-full" />}
-      </button>
-
-      <DropdownMenu isOpen={isOpen} onClose={() => setIsOpen(false)} className="w-80">
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <button
+          className="p-2 hover:bg-gray-200 dark:hover:bg-netflix-gray rounded-lg relative transition-colors duration-200 ease-in-out"
+        >
+          <Bell className="w-6 h-6 dark:text-gray-400" />
+          {friendRequests.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-netflix-red rounded-full" />}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80 p-0">
         <div className="px-4 py-2">
           <h3 className="font-semibold dark:text-white">Notifications</h3>
         </div>
@@ -135,7 +136,7 @@ export function NotificationDropdown() {
                 key={request.id}
                 title="Friend Request"
                 message={`${request.senderName} wants to be your friend`}
-                time={new Date(request.timestamp?.toDate()).toLocaleTimeString()}
+                time={request.timestamp ? new Date(request.timestamp.toDate()).toLocaleTimeString() : 'Just now'}
                 type="friend"
                 user={{
                   name: request.senderName || "Anonymous",
@@ -150,7 +151,7 @@ export function NotificationDropdown() {
             <div className="px-4 py-3 text-sm text-gray-400">No new notifications</div>
           )}
         </div>
-      </DropdownMenu>
-    </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

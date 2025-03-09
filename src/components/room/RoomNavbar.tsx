@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { LogOut, Home, Users, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { ThemeToggle } from "../ui/theme-toggle"
+import logo from "../../assets/logo.png"
+import logo2 from "../../assets/Logo2.png"
 import { 
   Tooltip, 
   TooltipContent, 
@@ -74,7 +77,8 @@ const RoomNavbar: React.FC<RoomNavbarProps> = ({
           </Tooltip>
         </TooltipProvider>
         
-        <h1 className="font-bold text-xl hidden sm:block">WatchRoom</h1>
+        <img src={logo || "/placeholder.svg"} alt="Logo" className="h-6 sm:h-7 hidden dark:block" />
+        <img src={logo2 || "/placeholder.svg"} alt="Logo" className="h-6 sm:h-7 dark:hidden" />
         
         {roomName && (
           <>
@@ -93,6 +97,7 @@ const RoomNavbar: React.FC<RoomNavbarProps> = ({
       </div>
       
       <div className="flex items-center gap-2">
+        <ThemeToggle />
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
