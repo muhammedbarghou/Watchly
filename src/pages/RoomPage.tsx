@@ -12,6 +12,7 @@ import {
   addDoc,
   deleteDoc,
   setDoc,
+  updateDoc,
   Timestamp 
 } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
@@ -24,6 +25,7 @@ import OptimizedVideoPlayer from '@/components/room/VideoPlayerPanel';
 import ParticipantsPanel from '@/components/room/ParticipantsPanel';
 import MessageList from '@/components/room/MessageList';
 import MessageInput from '@/components/room/MessageInput';
+import VoiceChat from '@/components/room/VoiceChat';
 
 // Interfaces
 interface Message {
@@ -41,6 +43,8 @@ interface RoomUser {
   photoURL?: string;
   isHost: boolean;
   joinedAt: Timestamp | null;
+  isInVoiceChat?: boolean;
+  isMuted?: boolean;
 }
 
 interface Room {
@@ -53,6 +57,7 @@ interface Room {
   updatedAt: Timestamp | null;
   currentTime?: number;
   isPlaying?: boolean;
+  voiceChatEnabled?: boolean;
 }
 
 interface LocationState {
@@ -74,6 +79,7 @@ export function RoomPage() {
   const [documentId, setDocumentId] = useState<string>('');
   const [isHost, setIsHost] = useState<boolean>(false);
   const [showParticipantsPanel, setShowParticipantsPanel] = useState<boolean>(false);
+  const [showVoiceChatPanel, setShowVoiceChatPanel] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   // Load room data
@@ -172,6 +178,8 @@ export function RoomPage() {
           photoURL: currentUser.photoURL,
           isHost: isHost,
           joinedAt: serverTimestamp(),
+          isInVoiceChat: false,
+          isMuted: false
         });
 
         // Add system message for user joining
@@ -213,6 +221,27 @@ export function RoomPage() {
     };
   }, [documentId, currentUser, isHost]);
 
+  // Initialize voice chat if new room
+  useEffect(() => {
+    const initVoiceChat = async () => {
+      if (!documentId || !isHost || !room) return;
+      
+      // Only initialize if this is a new room without voiceChatEnabled flag
+      if (room.voiceChatEnabled === undefined) {
+        try {
+          await updateDoc(doc(db, 'rooms', documentId), {
+            voiceChatEnabled: false,
+            updatedAt: serverTimestamp(),
+          });
+        } catch (error) {
+          console.error('Error initializing voice chat:', error);
+        }
+      }
+    };
+    
+    initVoiceChat();
+  }, [documentId, isHost, room]);
+
   // Handle leaving the room
   const handleLeaveRoom = async () => {
     try {
@@ -239,6 +268,21 @@ export function RoomPage() {
   // Toggle participants panel
   const toggleParticipantsPanel = () => {
     setShowParticipantsPanel(!showParticipantsPanel);
+    
+    // Close voice chat panel if opening participants panel
+    if (!showParticipantsPanel) {
+      setShowVoiceChatPanel(false);
+    }
+  };
+
+  // Toggle voice chat panel
+  const toggleVoiceChatPanel = () => {
+    setShowVoiceChatPanel(!showVoiceChatPanel);
+    
+    // Close participants panel if opening voice chat panel
+    if (!showVoiceChatPanel) {
+      setShowParticipantsPanel(false);
+    }
   };
 
   // Handle video error
@@ -277,16 +321,8 @@ export function RoomPage() {
     );
   }
 
-  // Debug info to troubleshoot host status
-  console.log('Current user ID:', currentUser?.uid);
-  console.log('Current user displayName:', currentUser?.displayName);
-  console.log('Room createdBy:', room?.createdBy);
-  console.log('Is host:', isHost);
-
   return (
     <div className="flex flex-col h-screen bg-background overflow-hidden">
-      {/* Debug Host Status */}
-      
       {/* Room navbar */}
       <RoomNavbar
         roomId={room.roomId}
@@ -296,21 +332,40 @@ export function RoomPage() {
         onLeaveRoom={handleLeaveRoom}
         onToggleParticipants={toggleParticipantsPanel}
         participantsPanelOpen={showParticipantsPanel}
+        onToggleVoiceChat={toggleVoiceChatPanel}
+        voiceChatPanelOpen={showVoiceChatPanel}
+        voiceChatEnabled={room.voiceChatEnabled}
+        voiceChatActiveUsers={activeUsers.filter(user => user.isInVoiceChat).length}
       />
 
       {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Participants panel (conditional) */}
-        {showParticipantsPanel && (
+        {/* Panels (conditional) */}
+        {(showParticipantsPanel || showVoiceChatPanel) && (
           <div className="w-64 flex-shrink-0 overflow-hidden border-r">
-            <ParticipantsPanel
-              roomId={room.roomId}
-              documentId={documentId}
-              isHost={isHost}
-              currentUserId={currentUser?.uid || ''}
-              participants={activeUsers}
-              onClose={toggleParticipantsPanel}
-            />
+            {showParticipantsPanel && (
+              <ParticipantsPanel
+                roomId={room.roomId}
+                documentId={documentId}
+                isHost={isHost}
+                currentUserId={currentUser?.uid || ''}
+                participants={activeUsers}
+                onClose={toggleParticipantsPanel}
+              />
+            )}
+            
+            {showVoiceChatPanel && currentUser && (
+              <div className="h-full p-4 overflow-y-auto">
+                <VoiceChat
+                  roomId={room.roomId}
+                  documentId={documentId}
+                  currentUserId={currentUser.uid}
+                  currentUserDisplayName={currentUser.displayName || 'Anonymous'}
+                  participants={activeUsers}
+                  isHost={isHost}
+                />
+              </div>
+            )}
           </div>
         )}
 

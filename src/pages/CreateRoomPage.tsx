@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { v4 as uuidv4 } from 'uuid';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch'; // Import Switch component
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -22,6 +22,7 @@ interface Room {
   password?: string;
   createdAt: any;
   updatedAt: any;
+  voiceChatEnabled: boolean; // Added voice chat field
 }
 
 export function CreateRoomPage() {
@@ -31,6 +32,7 @@ export function CreateRoomPage() {
   const [name, setName] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [password, setPassword] = useState('');
+  const [voiceChatEnabled, setVoiceChatEnabled] = useState(false); // State for voice chat toggle
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const roomId = useMemo(() => nanoid(6), []);
@@ -76,6 +78,7 @@ export function CreateRoomPage() {
         ...(password ? { password } : {}),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        voiceChatEnabled, // Add voice chat setting to room data
       };
 
       await addDoc(collection(db, 'rooms'), roomData);
@@ -127,6 +130,22 @@ export function CreateRoomPage() {
                 <p className="text-sm text-muted-foreground">
                   Enter a valid video URL (e.g., YouTube, Vimeo)
                 </p>
+              </div>
+
+              {/* Voice Chat Toggle */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="voiceChatEnabled">Voice Chat</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enable voice communications in this room
+                  </p>
+                </div>
+                <Switch
+                  id="voiceChatEnabled"
+                  checked={voiceChatEnabled}
+                  onCheckedChange={setVoiceChatEnabled}
+                  disabled={isSubmitting}
+                />
               </div>
 
               {/* Room Key Display */}

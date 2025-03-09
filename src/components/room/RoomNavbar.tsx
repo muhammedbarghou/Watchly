@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Home, Users, Copy } from 'lucide-react';
+import { LogOut, Home, Users, Copy, PhoneCall } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from "../ui/theme-toggle"
@@ -20,9 +20,13 @@ interface RoomNavbarProps {
   roomName?: string;
   hostName?: string;
   activeUsersCount: number;
+  voiceChatEnabled?: boolean;
+  voiceChatActiveUsers?: number;
   onLeaveRoom?: () => Promise<void>;
   onToggleParticipants?: () => void;
   participantsPanelOpen?: boolean;
+  onToggleVoiceChat?: () => void;
+  voiceChatPanelOpen?: boolean;
 }
 
 const RoomNavbar: React.FC<RoomNavbarProps> = ({ 
@@ -30,9 +34,13 @@ const RoomNavbar: React.FC<RoomNavbarProps> = ({
   roomName,
   hostName,
   activeUsersCount,
+  voiceChatEnabled = false,
+  voiceChatActiveUsers = 0,
   onLeaveRoom,
   onToggleParticipants,
-  participantsPanelOpen
+  participantsPanelOpen,
+  onToggleVoiceChat,
+  voiceChatPanelOpen
 }) => {
   const navigate = useNavigate();
 
@@ -98,6 +106,7 @@ const RoomNavbar: React.FC<RoomNavbarProps> = ({
       
       <div className="flex items-center gap-2">
         <ThemeToggle />
+        
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -115,6 +124,35 @@ const RoomNavbar: React.FC<RoomNavbarProps> = ({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
+        
+        {/* Voice Chat Button */}
+        {voiceChatEnabled && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant={voiceChatPanelOpen ? "secondary" : "ghost"}
+                  size="icon" 
+                  onClick={onToggleVoiceChat}
+                  className="relative"
+                >
+                  <PhoneCall className="h-4 w-4" />
+                  {voiceChatActiveUsers > 0 && (
+                    <Badge 
+                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0"
+                      variant="secondary"
+                    >
+                      {voiceChatActiveUsers}
+                    </Badge>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Toggle Voice Chat Panel</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
         
         <TooltipProvider>
           <Tooltip>
