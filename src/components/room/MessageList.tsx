@@ -182,7 +182,7 @@ const MessageList: React.FC<MessageListProps> = ({
                             isSelfMessage ? 'rounded-tr-none' : 'rounded-tl-none'
                           }`}
                         >
-                          <p className="text-sm break-words">{message.text}</p>
+                          <p className="text-sm break-words text-black dark:text-white">{message.text}</p>
                         </div>
                       ))}
                     </div>

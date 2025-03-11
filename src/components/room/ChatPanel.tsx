@@ -185,9 +185,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 >
                   {message.sender !== 'system' ? (
                     isCurrentUserMessage(message.sender) ? (
-                      // Current user message
+                      // Current user message - Updated styling with better colors
                       <div className="flex flex-col items-end">
-                        <div className="bg-primary/10 p-2 rounded-lg rounded-tr-none max-w-[80%]">
+                        <div className="bg-primary text-primary-foreground p-2 rounded-lg rounded-tr-none max-w-[80%]">
                           <p className="text-sm">{message.text}</p>
                         </div>
                         <span className="text-xs text-muted-foreground mt-1">
@@ -224,14 +224,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                       </div>
                     )
                   ) : (
-                    // System message
-                    <div className="w-full">
-                      <div className="bg-muted/40 text-center rounded-md py-1 px-2 my-2">
+                    // System message - Updated styling
+                    <div className="w-full flex justify-center">
+                      <div className="bg-muted px-3 py-1 rounded-full my-1 inline-flex items-center gap-2">
                         <p className="text-xs text-muted-foreground">
                           {message.text}
                         </p>
                         {message.timestamp && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-muted-foreground/70">
                             {formatTimestamp(message.timestamp)}
                           </span>
                         )}
