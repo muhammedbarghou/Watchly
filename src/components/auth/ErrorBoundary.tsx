@@ -58,7 +58,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     }
   }
 
-  reportError(error: Error, errorInfo: ErrorInfo): void {
+  reportError(_error: Error, _errorInfo: ErrorInfo): void {
     // This can be connected to an error reporting service like Sentry, LogRocket, etc.
     // Example: Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
   }

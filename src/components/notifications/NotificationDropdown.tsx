@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useState } from "react"
 import { Bell } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "../ui/dropdown-menu"

@@ -95,7 +95,6 @@ export function SettingsPage() {
   return (
     <MainLayout>
       <div className="max-w-screen-2xl mx-auto">
-        <h1 className="text-2xl font-bold dark:text-white mb-6 px-4">Settings</h1>
         <SettingsLayout
           tabs={TABS}
           activeTab={activeTab}

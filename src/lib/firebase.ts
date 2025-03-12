@@ -10,7 +10,7 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  databaseURL: "https://watchly-d16b7-default-rtdb.europe-west1.firebasedatabase.app/", // Make sure this is included
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
 };
 
 // Initialize Firebase
@@ -23,6 +23,7 @@ const googleProvider = new GoogleAuthProvider();
 // Initialize Firestore
 const db = getFirestore(app);
 
+// Initialize Realtime Database
 const rtdb = getDatabase(app);
 
 export { auth, googleProvider, db, rtdb };

@@ -75,41 +75,42 @@ export const FeatureSection: FC = () => {
           Why Choose Watchly?
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {features.map((feature, index) => (
-            <motion.div
-              key={feature.title}
-              className="flex flex-col overflow-hidden border dark:border-zinc-50/10 dark:bg-zinc-900 rounded-xl"
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
-              <div className="relative overflow-hidden cursor-pointer" onClick={() => setSelectedFeature(feature)}>
-                <motion.img
-                  src={feature.image}
-                  alt={feature.description}
-                  className="h-48 w-full object-cover"
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.4 }}
-                />
-                <div className="flex grow flex-row items-end justify-between px-3 py-2">
-                  <div>
-                    <h3 className="text-zinc-50">{feature.title}</h3>
-                    <p className="text-zinc-400">{feature.subtitle}</p>
+          {features.map((feature) => {
+            return (
+              <motion.div
+                key={feature.title}
+                className="flex flex-col overflow-hidden border dark:border-zinc-50/10 dark:bg-zinc-900 rounded-xl"
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="relative overflow-hidden cursor-pointer" onClick={() => setSelectedFeature(feature)}>
+                  <motion.img
+                    src={feature.image}
+                    alt={feature.description}
+                    className="h-48 w-full object-cover"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.4 }} />
+                  <div className="flex grow flex-row items-end justify-between px-3 py-2">
+                    <div>
+                      <h3 className="text-zinc-50">{feature.title}</h3>
+                      <p className="text-zinc-400">{feature.subtitle}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="relative ml-1 flex h-6 w-6 shrink-0 scale-100 select-none appearance-none items-center justify-center rounded-lg border border-zinc-950/10 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-800 focus-visible:ring-2 active:scale-[0.98] dark:border-zinc-50/10 dark:bg-zinc-900 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus-visible:ring-zinc-500"
+                      aria-label="Open dialog"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedFeature(feature);
+                      } }
+                    >
+                      <PlusIcon size={12} />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="relative ml-1 flex h-6 w-6 shrink-0 scale-100 select-none appearance-none items-center justify-center rounded-lg border border-zinc-950/10 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-800 focus-visible:ring-2 active:scale-[0.98] dark:border-zinc-50/10 dark:bg-zinc-900 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus-visible:ring-zinc-500"
-                    aria-label="Open dialog"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedFeature(feature);
-                    }}
-                  >
-                    <PlusIcon size={12} />
-                  </button>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
