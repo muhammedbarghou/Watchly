@@ -1,117 +1,94 @@
-import { useEffect, useState } from "react"
-import { Bell } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "../ui/dropdown-menu"
-import { NotificationItem } from "./NotificationItem"
-import { collection, query, where, onSnapshot, updateDoc, doc, getDoc, deleteDoc, Timestamp } from "firebase/firestore"
-import { db } from "@/lib/firebase"
-import { useAuth } from "@/hooks/use-auth"
-
-interface FriendRequest {
-  id: string
-  recipientId: string
-  senderId: string
-  status: string
-  timestamp: Timestamp
-  senderName?: string
-  senderPhotoURL?: string
-}
+import { useState, useEffect } from "react";
+import { Bell, Trash2, Check } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuSeparator } from "../ui/dropdown-menu";
+import { NotificationItem } from "./NotificationItem";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Notification } from "@/hooks/use-notifications";
+import { useNotifications } from "@/hooks/use-notifications";
+import { useFriends } from "@/hooks/use-friends";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export function NotificationDropdown() {
-  const [open, setOpen] = useState(false)
-  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([])
-  const { currentUser } = useAuth()
+  const [open, setOpen] = useState(false);
+  const { 
+    notifications, 
+    unreadCount, 
+    markAsRead, 
+    markAllAsRead, 
+    deleteNotification 
+  } = useNotifications();
+  
+  const { acceptFriendRequest, declineFriendRequest } = useFriends();
+  const navigate = useNavigate();
+  
+  // Filter notifications by type
+  const friendRequests = notifications.filter(n => n.type === 'friend_request');
+  const roomNotifications = notifications.filter(
+    n => n.type === 'room_invitation' || n.type === 'friend_joined_room'
+  );
 
-  useEffect(() => {
-    if (!currentUser?.uid) return
-
-    const friendRequestsRef = collection(db, "friendRequests")
-    const q = query(friendRequestsRef, where("recipientId", "==", currentUser.uid))
-
-    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-      const requests: FriendRequest[] = []
-
-      const fetchPromises = querySnapshot.docs.map(async (docSnapshot) => {
-        const request = docSnapshot.data() as FriendRequest
-        request.id = docSnapshot.id
-
-        const senderRef = doc(db, "users", request.senderId)
-        const senderDoc = await getDoc(senderRef)
-
-        if (senderDoc.exists()) {
-          const senderData = senderDoc.data()
-          request.senderName = senderData.displayName || "Anonymous"
-          request.senderPhotoURL = senderData.photoURL || ""
-        }
-
-        return request
-      })
-
-      const results = await Promise.all(fetchPromises)
-      setFriendRequests(results)
-    })
-
-    return () => unsubscribe()
-  }, [currentUser])
-
-  const handleAcceptFriendRequest = async (request: FriendRequest) => {
-    if (!currentUser?.uid) return
-
-    try {
-      const requestRef = doc(db, "friendRequests", request.id)
-      const senderRef = doc(db, "users", request.senderId)
-      const recipientRef = doc(db, "users", currentUser.uid)
-
-      const recipientDoc = await getDoc(recipientRef)
-      if (recipientDoc.exists()) {
-        const recipientData = recipientDoc.data()
-        const updatedFriends = [
-          ...(recipientData.friends || []),
-          {
-            uid: request.senderId,
-            displayName: request.senderName,
-            photoURL: request.senderPhotoURL,
-          },
-        ]
-
-        await updateDoc(recipientRef, { friends: updatedFriends })
-      }
-
-      const senderDoc = await getDoc(senderRef)
-      if (senderDoc.exists()) {
-        const senderData = senderDoc.data()
-        const updatedFriends = [
-          ...(senderData.friends || []),
-          {
-            uid: currentUser.uid,
-            displayName: currentUser.displayName || "Anonymous",
-            photoURL: currentUser.photoURL || "",
-          },
-        ]
-
-        await updateDoc(senderRef, { friends: updatedFriends })
-      }
-
-      await deleteDoc(requestRef)
-
-      setFriendRequests((prev) => prev.filter((req) => req.id !== request.id))
-    } catch (error) {
-      console.error("Error accepting friend request:", error)
+  // Handle accepting friend request
+  const handleAcceptFriendRequest = async (notification: Notification) => {
+    if (notification.type !== 'friend_request') return;
+    
+    console.log('Accepting friend request with ID:', notification.id);
+    
+    // Use the notification ID directly which corresponds to the friendRequest document ID
+    const success = await acceptFriendRequest(notification.id);
+    
+    if (success) {
+      // No need to delete notification explicitly - it will be removed by the listener
+      // when the friend request document is deleted
+      setOpen(false);
+      toast.success('Friend request accepted');
     }
-  }
+  };
 
-  const handleDeclineFriendRequest = async (request: FriendRequest) => {
-    if (!currentUser?.uid) return
-
-    try {
-      const requestRef = doc(db, "friendRequests", request.id)
-
-      await deleteDoc(requestRef)
-
-      setFriendRequests((prev) => prev.filter((req) => req.id !== request.id))
-    } catch (error) {
-      console.error("Error declining friend request:", error)
+  // Handle declining friend request
+  const handleDeclineFriendRequest = async (notification: Notification) => {
+    if (notification.type !== 'friend_request') return;
+    
+    console.log('Declining friend request with ID:', notification.id);
+    
+    // Use the notification ID directly which corresponds to the friendRequest document ID
+    const success = await declineFriendRequest(notification.id);
+    
+    if (success) {
+      // No need to delete notification explicitly - it will be removed by the listener
+      // when the friend request document is deleted
+      toast.success('Friend request declined');
     }
-  }
+  };
+
+  // Handle joining a room
+  const handleJoinRoom = async (notification: Notification) => {
+    if (notification.type !== 'room_invitation' && notification.type !== 'friend_joined_room') return;
+    
+    // Mark as read before navigating
+    await markAsRead(notification.id);
+    setOpen(false);
+    
+    // Navigate to join room page with notification ID
+    if (notification.type === 'room_invitation') {
+      navigate(`/join-room/${notification.roomId}?notification=${notification.id}&source=invitation`);
+    } else {
+      // For friend joined room notifications, navigate directly to the room
+      navigate(`/room/${notification.roomId}?source=notification`);
+    }
+  };
+  
+  // Handle deleting a notification
+  const handleDeleteNotification = async (notification: Notification) => {
+    console.log('Deleting notification:', notification.id);
+    await deleteNotification(notification.id);
+  };
+  
+  // Handle marking a notification as read
+  const handleMarkAsRead = async (notification: Notification) => {
+    await markAsRead(notification.id);
+  };
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -120,36 +97,120 @@ export function NotificationDropdown() {
           className="p-2 hover:bg-gray-200 dark:hover:bg-netflix-gray rounded-lg relative transition-colors duration-200 ease-in-out"
         >
           <Bell className="w-6 h-6 dark:text-gray-400" />
-          {friendRequests.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-netflix-red rounded-full" />}
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs font-bold bg-red-500 text-white rounded-full">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 p-0">
-        <div className="px-4 py-2">
+        <div className="flex items-center justify-between px-4 py-2 border-b dark:border-gray-700">
           <h3 className="font-semibold dark:text-white">Notifications</h3>
+          <div className="flex items-center gap-1">
+            {unreadCount > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 px-2"
+                onClick={() => markAllAsRead()}
+              >
+                <Check className="w-4 h-4 mr-1" />
+                Mark all read
+              </Button>
+            )}
+          </div>
         </div>
-        <div className="max-h-[400px] overflow-y-auto">
-          {friendRequests.length > 0 ? (
-            friendRequests.map((request) => (
-              <NotificationItem
-                key={request.id}
-                title="Friend Request"
-                message={`${request.senderName} wants to be your friend`}
-                time={request.timestamp ? new Date(request.timestamp.toDate()).toLocaleTimeString() : 'Just now'}
-                type="friend"
-                user={{
-                  name: request.senderName || "Anonymous",
-                  image: request.senderPhotoURL || "",
-                }}
-                isRead={false}
-                onAccept={() => handleAcceptFriendRequest(request)}
-                onDecline={() => handleDeclineFriendRequest(request)}
-              />
-            ))
-          ) : (
-            <div className="px-4 py-3 text-sm text-gray-400">No new notifications</div>
-          )}
-        </div>
+        
+        <Tabs defaultValue="all" className="w-full">
+          <TabsList className="w-full grid grid-cols-3">
+            <TabsTrigger value="all">
+              All
+              {unreadCount > 0 && (
+                <span className="ml-1.5 w-5 h-5 flex items-center justify-center text-xs bg-gray-200 dark:bg-gray-700 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="friends">
+              Friends
+              {friendRequests.length > 0 && (
+                <span className="ml-1.5 w-5 h-5 flex items-center justify-center text-xs bg-gray-200 dark:bg-gray-700 rounded-full">
+                  {friendRequests.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="rooms">
+              Rooms
+              {roomNotifications.length > 0 && (
+                <span className="ml-1.5 w-5 h-5 flex items-center justify-center text-xs bg-gray-200 dark:bg-gray-700 rounded-full">
+                  {roomNotifications.length}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+          
+          <div className="max-h-[400px] overflow-y-auto">
+            <TabsContent value="all" className="space-y-2 p-2 m-0">
+              {notifications.length > 0 ? (
+                notifications.map((notification) => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    onAccept={handleAcceptFriendRequest}
+                    onDecline={handleDeclineFriendRequest}
+                    onJoin={handleJoinRoom}
+                    onDelete={handleDeleteNotification}
+                    onRead={handleMarkAsRead}
+                  />
+                ))
+              ) : (
+                <div className="px-4 py-6 text-sm text-center text-gray-400">
+                  No notifications
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="friends" className="space-y-2 p-2 m-0">
+              {friendRequests.length > 0 ? (
+                friendRequests.map((notification) => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    onAccept={handleAcceptFriendRequest}
+                    onDecline={handleDeclineFriendRequest}
+                    onDelete={handleDeleteNotification}
+                    onRead={handleMarkAsRead}
+                  />
+                ))
+              ) : (
+                <div className="px-4 py-6 text-sm text-center text-gray-400">
+                  No friend requests
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="rooms" className="space-y-2 p-2 m-0">
+              {roomNotifications.length > 0 ? (
+                roomNotifications.map((notification) => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    onJoin={handleJoinRoom}
+                    onDecline={handleDeleteNotification}
+                    onDelete={handleDeleteNotification}
+                    onRead={handleMarkAsRead}
+                  />
+                ))
+              ) : (
+                <div className="px-4 py-6 text-sm text-center text-gray-400">
+                  No room notifications
+                </div>
+              )}
+            </TabsContent>
+          </div>
+        </Tabs>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
