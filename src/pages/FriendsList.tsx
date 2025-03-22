@@ -13,7 +13,7 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { useAuth } from '@/hooks/use-auth';
-import { MainLayout } from '../layout/MainLayout';
+import { MainLayout } from '../components/layout/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';

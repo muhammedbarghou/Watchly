@@ -22,7 +22,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { useFriends } from '@/hooks/use-friends';
 import { useNotifications } from '@/hooks/use-notifications';
 
-// Import components
 import RoomNavbar from '@/components/room/RoomNavbar';
 import OptimizedVideoPlayer from '@/components/room/VideoPlayerPanel';
 import ParticipantsPanel from '@/components/room/ParticipantsPanel';

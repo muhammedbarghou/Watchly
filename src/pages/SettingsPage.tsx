@@ -3,16 +3,12 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { MainLayout } from '../components/layout/MainLayout';
 import { SettingsLayout } from '../components/settings/SettingsLayout';
 import { AccountSettings } from '../components/settings/sections/AccountSettings';
-import { NotificationSettings } from '../components/settings/sections/NotificationSettings';
-import { PrivacySettings } from '../components/settings/sections/PrivacySettings';
 import { HelpSupportSettings } from '../components/settings/sections/HelpSupportSettings';
 import { LegalAboutSettings } from '../components/settings/sections/LegalAboutSettings';
-import { Settings, Bell, Shield, HelpCircle, FileText, Loader2 } from 'lucide-react';
+import { Settings,HelpCircle, FileText, Loader2 } from 'lucide-react';
 
 const TABS = [
   { label: 'Account', value: 'account', icon: <Settings className="w-4 h-4" /> },
-  { label: 'Notifications', value: 'notifications', icon: <Bell className="w-4 h-4" /> },
-  { label: 'Privacy & Security', value: 'privacy', icon: <Shield className="w-4 h-4" /> },
   { label: 'Help & Support', value: 'help', icon: <HelpCircle className="w-4 h-4" /> },
   { label: 'Legal & About', value: 'legal', icon: <FileText className="w-4 h-4" /> }
 ];
@@ -69,10 +65,6 @@ export function SettingsPage() {
     switch (activeTab) {
       case 'account':
         return <AccountSettings />;
-      case 'notifications':
-        return <NotificationSettings />;
-      case 'privacy':
-        return <PrivacySettings />;
       case 'help':
         return <HelpSupportSettings />;
       case 'legal':

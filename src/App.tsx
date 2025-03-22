@@ -16,8 +16,7 @@ import JoinRoomPage from './pages/JoinRoomPage';
 import ErrorBoundary from './components/auth/ErrorBoundary';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { TermsOfServices } from './pages/TermsOfServices';
-import FriendsPage from './pages/FriendsPage';
-import FriendsList from './components/friends/FriendsList';
+import FriendsList from './pages/FriendsList';
 import Loader from './components/Loader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Help from './pages/Help';
@@ -30,7 +29,6 @@ export const ROUTES = {
   RESET_PASSWORD: '/reset-password',
   VERIFY_EMAIL: '/verify-email',
   HUB: '/hub',
-  FRIENDS: '/friends',
   FRIENDS_LIST: '/friends-list',
   JOIN_ROOM: '/join',
   CREATE_ROOM: '/create',
@@ -59,7 +57,6 @@ const routes: RouteConfig[] = [
   { path: ROUTES.RESET_PASSWORD, element: <ResetPasswordPage />, isPrivate: false, title: 'Reset Password' },
   { path: ROUTES.VERIFY_EMAIL, element: <VerifyEmail />, isPrivate: false, title: 'Verify Email' },
   { path: ROUTES.HUB, element: <HubPage />, isPrivate: true, title: 'Hub', requiresEmailVerification: true },
-  { path: ROUTES.FRIENDS, element: <FriendsPage />, isPrivate: true, title: 'Friends', requiresEmailVerification: true },
   { path: ROUTES.FRIENDS_LIST, element: <FriendsList />, isPrivate: true, title: 'Friends List', requiresEmailVerification: true },
   { path: ROUTES.JOIN_ROOM, element: <JoinRoomPage />, isPrivate: true, title: 'Join Room', requiresEmailVerification: true },
   { path: ROUTES.CREATE_ROOM, element: <CreateRoomPage />, isPrivate: true, title: 'Create Room', requiresEmailVerification: true },
