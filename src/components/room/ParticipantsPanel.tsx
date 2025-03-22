@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
   collection, 
-  getDocs, 
   deleteDoc, 
   doc,
   addDoc,
+  getDoc,
   serverTimestamp,  
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -83,17 +83,36 @@ const ParticipantsPanel: React.FC<ParticipantsPanelProps> = ({
       
       setLoading(true);
       try {
-        // Fetch the user's friends array
+        // Get the user document which contains the friends array
         const userRef = doc(db, 'users', currentUserId);
-        const friendsRef = collection(db, 'users', currentUserId, 'friends');
-        const friendsSnapshot = await getDocs(friendsRef);
-        
-        const friendsData = friendsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Friend[];
-        
-        setFriends(friendsData);
+        const userDoc = await getDoc(userRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const friendsArray = userData.friends || [];
+
+          // Fetch each friend's full data from their user document
+          const mappedFriends = await Promise.all(
+            friendsArray.map(async (friend: any) => {
+              const friendRef = doc(db, 'users', friend.uid);
+              const friendDoc = await getDoc(friendRef);
+
+              if (friendDoc.exists()) {
+                const friendData = friendDoc.data();
+                return {
+                  id: friend.uid,
+                  displayName: friendData.displayName || 'Anonymous',
+                  photoURL: friendData.photoURL || null,
+                  status: friendData.isOnline ? 'online' : 'offline'
+                };
+              }
+              return null;
+            })
+          );
+          
+          // Filter out any null values (friends that couldn't be fetched)
+          setFriends(mappedFriends.filter((friend) => friend !== null) as Friend[]);
+        }
       } catch (error) {
         console.error('Error loading friends:', error);
         toast.error('Failed to load friends list');

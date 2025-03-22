@@ -12,7 +12,6 @@ import {
   HelpCircle,
   LogOut,
   UserPlus,
-  List,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -65,7 +64,6 @@ const navigationLinks: NavigationLink[] = [
     icon: Users,
     children: [
       { to: "/friends", icon: UserPlus, label: "Friends Activities" },
-      { to: "/friends-list", icon: List, label: "Friend List" },
     ],
   },
   { to: "/chat", icon: MessageCircle, label: "Chat" },

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { UserPlus, Video, X, CheckSquare, User } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -45,9 +45,10 @@ export function NotificationItem({
     if (!timestamp) return 'Just now';
     
     try {
-      const date = timestamp.toDate();
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
       return formatDistanceToNow(date, { addSuffix: true });
     } catch (error) {
+      console.error('Error formatting timestamp:', error);
       return 'Recently';
     }
   };
@@ -74,20 +75,46 @@ export function NotificationItem({
       case 'friend_request':
         return `${senderName} wants to be your friend`;
       case 'room_invitation':
-        return `${senderName} invited you to join "${notification.roomName}"`;
+        return `${senderName} invited you to join "${notification.roomName || 'a room'}"`;
       case 'friend_joined_room':
-        return `${senderName} joined room "${notification.roomName}"`;
+        return `${senderName} joined room "${notification.roomName || 'your room'}"`;
       default:
         return notification.message || 'You have a new notification';
     }
   };
   
   // Handle automatic read status when viewing notification
-  React.useEffect(() => {
-    if (!notification.read && onRead) {
-      onRead(notification);
-    }
+  useEffect(() => {
+    const markAsReadIfNeeded = async () => {
+      if (!notification.read && onRead) {
+        try {
+          await onRead(notification);
+        } catch (error) {
+          console.error('Error marking notification as read:', error);
+        }
+      }
+    };
+
+    markAsReadIfNeeded();
   }, [notification, onRead]);
+
+  // Safely handle button click with error handling
+  const handleButtonClick = (
+    handler?: (notification: Notification) => void, 
+    e?: React.MouseEvent
+  ) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    
+    if (handler) {
+      try {
+        handler(notification);
+      } catch (error) {
+        console.error('Error handling notification action:', error);
+      }
+    }
+  };
 
   return (
     <Card
@@ -135,10 +162,7 @@ export function NotificationItem({
                 <Button
                   size="sm"
                   className="bg-red-600 hover:bg-red-700 text-white"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAccept?.(notification);
-                  }}
+                  onClick={(e) => handleButtonClick(onAccept, e)}
                 >
                   <CheckSquare className="w-4 h-4 mr-1" />
                   Accept
@@ -147,10 +171,7 @@ export function NotificationItem({
                   variant="outline"
                   size="sm"
                   className="dark:hover:bg-gray-800/50 hover:bg-gray-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDecline?.(notification);
-                  }}
+                  onClick={(e) => handleButtonClick(onDecline, e)}
                 >
                   <X className="w-4 h-4 mr-1" />
                   Decline
@@ -163,10 +184,8 @@ export function NotificationItem({
                 <Button
                   size="sm"
                   className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onJoin?.(notification);
-                  }}
+                  onClick={(e) => handleButtonClick(onJoin, e)}
+                  disabled={!notification.roomId}
                 >
                   <Video className="w-4 h-4 mr-1" />
                   Join Room
@@ -175,10 +194,7 @@ export function NotificationItem({
                   variant="outline"
                   size="sm"
                   className="dark:hover:bg-gray-800/50 hover:bg-gray-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDecline?.(notification);
-                  }}
+                  onClick={(e) => handleButtonClick(onDecline, e)}
                 >
                   <X className="w-4 h-4 mr-1" />
                   Decline
@@ -191,10 +207,8 @@ export function NotificationItem({
                 <Button
                   size="sm"
                   className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onJoin?.(notification);
-                  }}
+                  onClick={(e) => handleButtonClick(onJoin, e)}
+                  disabled={!notification.roomId}
                 >
                   <Video className="w-4 h-4 mr-1" />
                   Join Room
@@ -202,10 +216,7 @@ export function NotificationItem({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete?.(notification);
-                  }}
+                  onClick={(e) => handleButtonClick(onDelete, e)}
                 >
                   Dismiss
                 </Button>

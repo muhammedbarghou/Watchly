@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { Bell, Trash2, Check } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuSeparator } from "../ui/dropdown-menu";
+import { useState,  } from "react";
+import { Bell,  Check } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger,  } from "../ui/dropdown-menu";
 import { NotificationItem } from "./NotificationItem";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -33,16 +33,21 @@ export function NotificationDropdown() {
   const handleAcceptFriendRequest = async (notification: Notification) => {
     if (notification.type !== 'friend_request') return;
     
-    console.log('Accepting friend request with ID:', notification.id);
-    
-    // Use the notification ID directly which corresponds to the friendRequest document ID
-    const success = await acceptFriendRequest(notification.id);
-    
-    if (success) {
-      // No need to delete notification explicitly - it will be removed by the listener
-      // when the friend request document is deleted
-      setOpen(false);
-      toast.success('Friend request accepted');
+    try {
+      console.log('Accepting friend request with ID:', notification.id);
+      
+      // Use the notification ID directly which corresponds to the friendRequest document ID
+      const success = await acceptFriendRequest(notification.id);
+      
+      if (success) {
+        // No need to delete notification explicitly - it will be removed by the listener
+        // when the friend request document is deleted
+        setOpen(false);
+        toast.success('Friend request accepted');
+      }
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      toast.error('Failed to accept friend request');
     }
   };
 
@@ -50,15 +55,20 @@ export function NotificationDropdown() {
   const handleDeclineFriendRequest = async (notification: Notification) => {
     if (notification.type !== 'friend_request') return;
     
-    console.log('Declining friend request with ID:', notification.id);
-    
-    // Use the notification ID directly which corresponds to the friendRequest document ID
-    const success = await declineFriendRequest(notification.id);
-    
-    if (success) {
-      // No need to delete notification explicitly - it will be removed by the listener
-      // when the friend request document is deleted
-      toast.success('Friend request declined');
+    try {
+      console.log('Declining friend request with ID:', notification.id);
+      
+      // Use the notification ID directly which corresponds to the friendRequest document ID
+      const success = await declineFriendRequest(notification.id);
+      
+      if (success) {
+        // No need to delete notification explicitly - it will be removed by the listener
+        // when the friend request document is deleted
+        toast.success('Friend request declined');
+      }
+    } catch (error) {
+      console.error('Error declining friend request:', error);
+      toast.error('Failed to decline friend request');
     }
   };
 
@@ -66,28 +76,48 @@ export function NotificationDropdown() {
   const handleJoinRoom = async (notification: Notification) => {
     if (notification.type !== 'room_invitation' && notification.type !== 'friend_joined_room') return;
     
-    // Mark as read before navigating
-    await markAsRead(notification.id);
-    setOpen(false);
-    
-    // Navigate to join room page with notification ID
-    if (notification.type === 'room_invitation') {
-      navigate(`/join-room/${notification.roomId}?notification=${notification.id}&source=invitation`);
-    } else {
-      // For friend joined room notifications, navigate directly to the room
-      navigate(`/room/${notification.roomId}?source=notification`);
+    try {
+      // Mark as read before navigating
+      await markAsRead(notification.id);
+      setOpen(false);
+      
+      // Navigate to join room page with notification ID
+      if (notification.type === 'room_invitation' && notification.roomId) {
+        navigate(`/join-room/${notification.roomId}?notification=${notification.id}&source=invitation`);
+      } else if (notification.roomId) {
+        // For friend joined room notifications, navigate directly to the room
+        navigate(`/room/${notification.roomId}?source=notification`);
+      } else {
+        console.error('Room ID is missing from notification:', notification);
+        toast.error('Cannot join room: Room ID is missing');
+      }
+    } catch (error) {
+      console.error('Error joining room:', error);
+      toast.error('Failed to join room');
     }
   };
   
   // Handle deleting a notification
   const handleDeleteNotification = async (notification: Notification) => {
-    console.log('Deleting notification:', notification.id);
-    await deleteNotification(notification.id);
+    try {
+      console.log('Deleting notification:', notification.id);
+      await deleteNotification(notification.id);
+      toast.success('Notification dismissed');
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      toast.error('Failed to dismiss notification');
+    }
   };
   
   // Handle marking a notification as read
   const handleMarkAsRead = async (notification: Notification) => {
-    await markAsRead(notification.id);
+    try {
+      if (!notification.read) {
+        await markAsRead(notification.id);
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
   return (
@@ -95,6 +125,7 @@ export function NotificationDropdown() {
       <DropdownMenuTrigger asChild>
         <button
           className="p-2 hover:bg-gray-200 dark:hover:bg-netflix-gray rounded-lg relative transition-colors duration-200 ease-in-out"
+          aria-label="Notifications"
         >
           <Bell className="w-6 h-6 dark:text-gray-400" />
           {unreadCount > 0 && (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAppSelector } from '@/store/Store';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,17 @@ export function PrivateRoute({ children, requiresEmailVerification = true }: Pri
   const { sendEmailVerification } = useAuth();
   const navigate = useNavigate();
   const [sending, setSending] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // Add debug effect to log auth state
+  useEffect(() => {
+    console.log('PrivateRoute auth state:', { currentUser, loading });
+    
+    // Only consider auth checked after loading is complete
+    if (!loading) {
+      setAuthChecked(true);
+    }
+  }, [currentUser, loading]);
 
   const handleResendVerification = async () => {
     try {
@@ -31,7 +42,8 @@ export function PrivateRoute({ children, requiresEmailVerification = true }: Pri
     }
   };
 
-  if (loading) {
+  // Show loading state if still loading or auth hasn't been checked
+  if (loading || !authChecked) {
     return (
       <div className="h-screen flex justify-center items-center bg-black">
         <div className="w-full gap-x-2 flex justify-center items-center">
@@ -45,6 +57,7 @@ export function PrivateRoute({ children, requiresEmailVerification = true }: Pri
 
   // If not authenticated, show login required screen
   if (!currentUser) {
+    console.log('User not authenticated, showing login screen');
     return (
       <div className="min-h-screen bg-netflix-black flex items-center justify-center p-4">
         <motion.div 
@@ -128,6 +141,7 @@ export function PrivateRoute({ children, requiresEmailVerification = true }: Pri
 
   // If email verification is required and the user's email is not verified
   if (requiresEmailVerification && !currentUser.emailVerified) {
+    console.log('Email not verified, showing verification screen');
     return (
       <div className="min-h-screen bg-netflix-black flex items-center justify-center p-4">
         <motion.div 
@@ -227,5 +241,6 @@ export function PrivateRoute({ children, requiresEmailVerification = true }: Pri
     );
   }
 
+  console.log('Auth checks passed, rendering children');
   return <>{children}</>;
 }
