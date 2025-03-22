@@ -47,7 +47,7 @@ interface RoomNavbarProps {
 const RoomNavbar: React.FC<RoomNavbarProps> = ({ 
   roomId,
   roomName,
-  hostName,
+  // hostName,
   activeUsersCount,
   voiceChatEnabled = false,
   voiceChatActiveUsers = 0,
@@ -128,12 +128,19 @@ const RoomNavbar: React.FC<RoomNavbarProps> = ({
             </>
           )}
           
-          {hostName && (
-            <span className="text-sm text-muted-foreground hidden md:inline-block ml-2">
-              Host: {hostName}
-            </span>
-          )}
+          {
+            roomId && (
+              <>
+                <Separator orientation="vertical" className="h-6 mx-2 hidden sm:block" />
+                <h6 className="text-muted-foreground text-xs sm:text-sm font-medium">Room Id :</h6>
+                <span className="text-muted-foreground text-xs sm:text-sm font-medium">
+                  {roomId}
+                </span>
+              </>
+            )
+          }
         </div>
+
         
         <div className="flex items-center gap-2">
           <ThemeToggle />

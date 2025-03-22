@@ -608,7 +608,7 @@ const VideoPlayer = ({
           </div>
 
           {/* Video URL and info (collapsible) */}
-          <details className="text-xs text-muted-foreground">
+          {/* <details className="text-xs text-muted-foreground">
             <summary className="cursor-pointer">Video Information</summary>
             <p className="mt-1 break-all">URL: {videoUrl}</p>
             <p className="mt-1">Status: {isVideoReady ? 'Ready' : 'Loading'}</p>
@@ -617,7 +617,7 @@ const VideoPlayer = ({
             <p className="mt-1">Control Mode: {isHost ? 'Host (Full Control)' : 'Viewer (No Control)'}</p>
             <p className="mt-1">Buffer Window: {bufferWindow}s</p>
             <p className="mt-1">Queue: {queueCount} videos</p>
-          </details>
+          </details> */}
         </CardContent>
       </Card>
     </div>
