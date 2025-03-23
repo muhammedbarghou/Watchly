@@ -1,11 +1,8 @@
-// src/hooks/use-notifications.ts
-
 import { useState, useEffect, useCallback } from 'react';
 import {
   collection,
   query,
   where,
-  getDocs,
   getDoc,
   addDoc,
   updateDoc,
@@ -22,10 +19,8 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 
-// Notification types
 export type NotificationType = 'friend_request' | 'room_invitation' | 'friend_joined_room';
 
-// Base notification interface
 export interface BaseNotification {
   id: string;
   type: NotificationType;

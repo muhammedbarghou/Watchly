@@ -17,6 +17,8 @@ interface NotificationItemProps {
   onJoin?: (notification: Notification) => void;
   onDelete?: (notification: Notification) => void;
   onRead?: (notification: Notification) => void;
+  
+
 }
 
 export function NotificationItem({ 
@@ -79,7 +81,8 @@ export function NotificationItem({
       case 'friend_joined_room':
         return `${senderName} joined room "${notification.roomName || 'your room'}"`;
       default:
-        return notification.message || 'You have a new notification';
+        // Add type assertion to handle the 'never' type
+        return (notification as any).message || 'You have a new notification';
     }
   };
   
@@ -183,7 +186,7 @@ export function NotificationItem({
               <div className="flex flex-wrap gap-2 mt-3">
                 <Button
                   size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-red-600 hover:bg-red-700 text-white"
                   onClick={(e) => handleButtonClick(onJoin, e)}
                   disabled={!notification.roomId}
                 >
@@ -206,7 +209,7 @@ export function NotificationItem({
               <div className="flex flex-wrap gap-2 mt-3">
                 <Button
                   size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-red-600 hover:bg-red-700 text-white"
                   onClick={(e) => handleButtonClick(onJoin, e)}
                   disabled={!notification.roomId}
                 >
