@@ -16,17 +16,22 @@ import {
   Timestamp,
   arrayUnion
 } from 'firebase/firestore';
-import { Loader2 } from 'lucide-react';
+import { Loader2, UserPlus } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
+import { useFriends } from '@/hooks/use-friends';
+import { useNotifications } from '@/hooks/use-notifications';
 
+// Import components
 import RoomNavbar from '@/components/room/RoomNavbar';
 import OptimizedVideoPlayer from '@/components/room/VideoPlayerPanel';
 import ParticipantsPanel from '@/components/room/ParticipantsPanel';
 import MessageList from '@/components/room/MessageList';
 import MessageInput from '@/components/room/MessageInput';
 import VoiceChat from '@/components/room/VoiceChat';
-
+import { InviteFriends } from '@/components/room/InviteFriends';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 // Interfaces
 interface Message {
@@ -78,6 +83,8 @@ export function RoomPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const { friends } = useFriends();
+  const { sendRoomInvitation } = useNotifications();
   
   // State
   const [room, setRoom] = useState<Room | null>(null);
@@ -90,6 +97,13 @@ export function RoomPage() {
   const [showVoiceChatPanel, setShowVoiceChatPanel] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [videoQueue, setVideoQueue] = useState<VideoQueueItem[]>([]);
+  const [showInviteDialog, setShowInviteDialog] = useState<boolean>(false);
+  const [notifiedFriends, setNotifiedFriends] = useState<boolean>(false);
+
+  // Debug log for friends data
+  useEffect(() => {
+    console.log("Friends data available:", friends.length > 0 ? "Yes" : "No", friends.length);
+  }, [friends]);
 
   // Load room data
   useEffect(() => {
@@ -250,6 +264,54 @@ export function RoomPage() {
     };
   }, [documentId, currentUser, isHost]);
 
+  // Effect for notifying friends when joining a room
+  useEffect(() => {
+    const notifyFriendsOfJoin = async () => {
+      // Only run if we haven't notified yet, have room data, friends data, and are not from an invitation
+      if (notifiedFriends || !room || !roomId || !currentUser || friends.length === 0) {
+        return;
+      }
+
+      // Check join source from URL params
+      const params = new URLSearchParams(location.search);
+      const source = params.get('source');
+      
+      // Only notify on fresh joins, not from invitations
+      if (source === 'invitation') {
+        return;
+      }
+      
+      try {
+        console.log("Notifying friends about joining room:", room.name);
+        const friendIds = friends.map(f => f.id);
+        
+        if (friendIds.length > 0) {
+          // Get sendRoomInvitation from useNotifications
+          await Promise.all(friendIds.map(friendId => 
+            addDoc(collection(db, 'users', friendId, 'notifications'), {
+              type: 'friend_joined_room',
+              roomId: roomId,
+              roomName: room.name,
+              documentId: documentId,
+              senderId: currentUser.uid,
+              senderName: currentUser.displayName,
+              timestamp: serverTimestamp(),
+              message: `joined a watch room called "${room.name}"`,
+              read: false
+            })
+          ));
+          
+          setNotifiedFriends(true);
+          console.log("Successfully notified friends about room join");
+        }
+      } catch (error) {
+        console.error("Error notifying friends:", error);
+      }
+    };
+    
+    notifyFriendsOfJoin();
+  }, [room, roomId, documentId, currentUser, friends, location.search, notifiedFriends]);
+
   // Initialize video queue if not present
   useEffect(() => {
     const initVideoQueue = async () => {
@@ -344,6 +406,34 @@ export function RoomPage() {
     }
   };
 
+  // Handle sending room invitation to a friend
+  const handleInviteFriend = async (friendId: string) => {
+    if (!room || !roomId || !documentId || !currentUser) {
+      toast.error('Room information not available');
+      return false;
+    }
+    
+    try {
+      const success = await sendRoomInvitation(
+        friendId,
+        roomId,
+        room.name,
+        documentId
+      );
+      
+      if (success) {
+        toast.success('Invitation sent!');
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error inviting friend:', error);
+      toast.error('Failed to send invitation');
+      return false;
+    }
+  };
+
   // Handle leaving the room
   const handleLeaveRoom = async () => {
     try {
@@ -385,6 +475,11 @@ export function RoomPage() {
     if (!showVoiceChatPanel) {
       setShowParticipantsPanel(false);
     }
+  };
+
+  // Toggle invite dialog
+  const toggleInviteDialog = () => {
+    setShowInviteDialog(!showInviteDialog);
   };
 
   // Handle video error
@@ -470,6 +565,7 @@ export function RoomPage() {
         voiceChatActiveUsers={activeUsers.filter(user => user.isInVoiceChat).length}
         isHost={isHost}
         onSetNextVideo={handleSetNextVideo}
+        onToggleInvite={toggleInviteDialog}
       />
 
       {/* Main content area */}
@@ -507,18 +603,42 @@ export function RoomPage() {
         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
           {/* Video player area */}
           <div className="flex-1 md:w-2/3 overflow-hidden flex flex-col">
-            <OptimizedVideoPlayer
-              videoUrl={room.videoUrl}
-              roomId={room.roomId}
-              documentId={documentId}
-              isHost={isHost}
-              initialTime={room.currentTime}
-              initialPlaying={room.isPlaying}
-              onError={handleVideoError}
-              onEnded={handleVideoEnded}
-              bufferWindow={3} // Add buffer window to prevent excessive syncing (3 seconds)
-              queueCount={videoQueue.length}
-            />
+            <div className="relative w-full h-full">
+              <OptimizedVideoPlayer
+                videoUrl={room.videoUrl}
+                roomId={room.roomId}
+                documentId={documentId}
+                isHost={isHost}
+                initialTime={room.currentTime}
+                initialPlaying={room.isPlaying}
+                onError={handleVideoError}
+                onEnded={handleVideoEnded}
+                bufferWindow={3} // Add buffer window to prevent excessive syncing (3 seconds)
+                queueCount={videoQueue.length}
+              />
+              
+              {/* Invite button overlay */}
+              <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+                <DialogTrigger asChild>
+                  <Button 
+                    className="absolute top-4 right-4 z-10"
+                    variant="outline"
+                    size="sm"
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" /> 
+                    Invite Friends
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <InviteFriends
+                    roomId={room.roomId}
+                    roomName={room.name}
+                    documentId={documentId}
+                    onInvite={handleInviteFriend}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
 
           {/* Chat area */}

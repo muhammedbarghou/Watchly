@@ -9,6 +9,8 @@ import {
   verifyEmailThunk,
   clearAuthError,
 } from '@/contexts/AuthContext';
+import { useEffect, useState } from 'react';
+import { getAuth } from 'firebase/auth';
 
 export function useAuth() {
   const dispatch = useAppDispatch();
@@ -17,6 +19,36 @@ export function useAuth() {
   const loading = useAppSelector((state) => state.auth.loading);
   const error = useAppSelector((state) => state.auth.error);
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  const [isThirdPartyAuth, setIsThirdPartyAuth] = useState(false);
+
+  // Check for third-party auth providers on mount and when currentUser changes
+  useEffect(() => {
+    const checkThirdPartyAuth = () => {
+      if (!currentUser) {
+        setIsThirdPartyAuth(false);
+        return;
+      }
+      
+      const auth = getAuth();
+      const firebaseUser = auth.currentUser;
+      
+      if (!firebaseUser) {
+        setIsThirdPartyAuth(false);
+        return;
+      }
+      
+      // Check if any provider is Google or Facebook
+      const isOAuthProvider = firebaseUser.providerData.some(
+        provider => 
+          provider.providerId === 'google.com' || 
+          provider.providerId === 'facebook.com'
+      );
+      
+      setIsThirdPartyAuth(isOAuthProvider);
+    };
+    
+    checkThirdPartyAuth();
+  }, [currentUser]);
 
   const signInWithEmail = (email: string, password: string) =>
     dispatch(signInWithEmailThunk({ email, password }));
@@ -47,6 +79,7 @@ export function useAuth() {
     sendEmailVerification,
     verifyEmail,
     clearError,
-    isEmailVerified: currentUser?.emailVerified || false,
+    isEmailVerified: currentUser?.emailVerified || isThirdPartyAuth || false,
+    isThirdPartyAuth,
   };
 }

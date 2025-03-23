@@ -61,7 +61,6 @@ const FriendsList: React.FC<FriendsListProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [invitingSent, setInvitingSent] = useState<boolean>(false);
 
-  // Load friends list
   useEffect(() => {
     const fetchFriends = async () => {
       if (!userId) return;

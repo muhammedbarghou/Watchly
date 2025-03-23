@@ -1,4 +1,4 @@
-import  { useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useNotifications } from '@/hooks/use-notifications';
@@ -12,9 +12,10 @@ interface InviteFriendsProps {
   roomId: string;
   roomName: string;
   documentId: string;
+  onInvite?: (friendId: string) => Promise<boolean>;
 }
 
-export function InviteFriends({ roomId, roomName, documentId }: InviteFriendsProps) {
+export function InviteFriends({ roomId, roomName, documentId, onInvite }: InviteFriendsProps) {
   const [open, setOpen] = useState(false);
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
   const [invitedFriends, setInvitedFriends] = useState<string[]>([]);
@@ -43,9 +44,14 @@ export function InviteFriends({ roomId, roomName, documentId }: InviteFriendsPro
     
     try {
       // Send invitations to each selected friend
-      const invitePromises = selectedFriends.map(friendId => 
-        sendRoomInvitation(friendId, roomId, roomName, documentId)
-      );
+      const invitePromises = selectedFriends.map(friendId => {
+        // Use the provided onInvite function or fall back to sendRoomInvitation
+        if (onInvite) {
+          return onInvite(friendId);
+        } else {
+          return sendRoomInvitation(friendId, roomId, roomName, documentId);
+        }
+      });
       
       await Promise.all(invitePromises);
       
@@ -132,7 +138,6 @@ export function InviteFriends({ roomId, roomName, documentId }: InviteFriendsPro
                           }`}>
                             {isSelected && (
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-4 h-4">
-                                // src/components/room/InviteFriends.tsx (continued)
                                 <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd" />
                               </svg>
                             )}

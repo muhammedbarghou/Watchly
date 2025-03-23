@@ -6,6 +6,17 @@ import { useNavigate } from 'react-router-dom';
 import { LockIcon, LogIn, Mail, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
+import { getAuth } from 'firebase/auth';
+
+// Define the provider data interface
+interface UserProviderData {
+  providerId: string;
+  uid?: string;
+  displayName?: string | null;
+  email?: string | null;
+  phoneNumber?: string | null;
+  photoURL?: string | null;
+}
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -18,16 +29,48 @@ export function PrivateRoute({ children, requiresEmailVerification = true }: Pri
   const navigate = useNavigate();
   const [sending, setSending] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [processingRedirect, setProcessingRedirect] = useState(true);
+
+  // Handle possible OAuth redirects on component mount
+  useEffect(() => {
+    const auth = getAuth();
+    
+    const checkForRedirect = async () => {
+      try {
+        // Add a small delay to allow Firebase to restore auth state after redirects
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        setProcessingRedirect(false);
+        console.log('Redirect processing completed');
+      } catch (error) {
+        console.error('Error handling redirect:', error);
+        setProcessingRedirect(false);
+      }
+    };
+
+    checkForRedirect();
+  }, []);
 
   // Add debug effect to log auth state
   useEffect(() => {
-    console.log('PrivateRoute auth state:', { currentUser, loading });
+    // Get provider data from Firebase Auth directly for debugging
+    const auth = getAuth();
+    const firebaseUser = auth.currentUser;
+    const providerData = firebaseUser?.providerData || [];
+    
+    console.log('PrivateRoute auth state:', { 
+      currentUser, 
+      loading, 
+      processingRedirect,
+      emailVerified: currentUser?.emailVerified,
+      firebaseUser,
+      providerData
+    });
     
     // Only consider auth checked after loading is complete
     if (!loading) {
       setAuthChecked(true);
     }
-  }, [currentUser, loading]);
+  }, [currentUser, loading, processingRedirect]);
 
   const handleResendVerification = async () => {
     try {
@@ -42,8 +85,27 @@ export function PrivateRoute({ children, requiresEmailVerification = true }: Pri
     }
   };
 
-  // Show loading state if still loading or auth hasn't been checked
-  if (loading || !authChecked) {
+  // Check if user is authenticated via third-party provider (Google or Facebook)
+  // Use a type-safe approach to check provider data
+  const isThirdPartyAuth = React.useMemo(() => {
+    if (!currentUser) return false;
+    
+    // Access providerData through auth object if it's not directly on currentUser
+    const auth = getAuth();
+    const firebaseUser = auth.currentUser;
+    const providerData = firebaseUser?.providerData || [];
+    
+    // Check if any provider is Google or Facebook
+    return providerData.some(
+      (provider: UserProviderData) => 
+        provider.providerId === 'google.com' || 
+        provider.providerId === 'facebook.com'
+    );
+  }, [currentUser]);
+
+  // Show loading state if still loading, processing redirect, or auth hasn't been checked
+  if (loading || processingRedirect || !authChecked) {
+    console.log('Showing loading state', { loading, processingRedirect, authChecked });
     return (
       <div className="h-screen flex justify-center items-center bg-black">
         <div className="w-full gap-x-2 flex justify-center items-center">
@@ -140,8 +202,14 @@ export function PrivateRoute({ children, requiresEmailVerification = true }: Pri
   }
 
   // If email verification is required and the user's email is not verified
-  if (requiresEmailVerification && !currentUser.emailVerified) {
-    console.log('Email not verified, showing verification screen');
+  // AND the user is not authenticated via third-party provider
+  if (requiresEmailVerification && !currentUser.emailVerified && !isThirdPartyAuth) {
+    console.log('Email not verified, showing verification screen', { 
+      requiresEmailVerification, 
+      emailVerified: currentUser.emailVerified,
+      isThirdPartyAuth
+    });
+    
     return (
       <div className="min-h-screen bg-netflix-black flex items-center justify-center p-4">
         <motion.div 
@@ -206,8 +274,17 @@ export function PrivateRoute({ children, requiresEmailVerification = true }: Pri
                 disabled={sending}
                 className="w-full bg-orange-600 hover:bg-orange-700 text-white gap-2"
               >
-                <Mail className="w-4 h-4" />
-                {sending ? 'Sending...' : 'Resend Verification Email'}
+                {sending ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-r-transparent mr-2"></span>
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-4 h-4" />
+                    Resend Verification Email
+                  </>
+                )}
               </Button>
               
               <Button 

@@ -43,7 +43,7 @@ interface User {
   displayName: string;
   photoURL?: string;
   isHost: boolean;
-  joinedAt: any; // Using 'any' here for simplicity, should be Timestamp
+  joinedAt: any; 
 }
 
 interface Friend {

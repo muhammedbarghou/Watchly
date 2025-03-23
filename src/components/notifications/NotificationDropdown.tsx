@@ -72,30 +72,23 @@ export function NotificationDropdown() {
     }
   };
 
-  // Handle joining a room
-  const handleJoinRoom = async (notification: Notification) => {
-    if (notification.type !== 'room_invitation' && notification.type !== 'friend_joined_room') return;
-    
-    try {
-      // Mark as read before navigating
-      await markAsRead(notification.id);
-      setOpen(false);
-      
-      // Navigate to join room page with notification ID
-      if (notification.type === 'room_invitation' && notification.roomId) {
-        navigate(`/join-room/${notification.roomId}?notification=${notification.id}&source=invitation`);
-      } else if (notification.roomId) {
-        // For friend joined room notifications, navigate directly to the room
-        navigate(`/room/${notification.roomId}?source=notification`);
-      } else {
-        console.error('Room ID is missing from notification:', notification);
-        toast.error('Cannot join room: Room ID is missing');
-      }
-    } catch (error) {
-      console.error('Error joining room:', error);
-      toast.error('Failed to join room');
-    }
-  };
+const handleJoinRoom = async (notification: Notification) => {
+  if (notification.type !== 'room_invitation' && notification.type !== 'friend_joined_room') return;
+  
+  // Mark as read before navigating
+  await markAsRead(notification.id);
+  setOpen(false);
+  
+  // Navigate directly to the room instead of join-room
+  // Use the state parameter to pass roomData if available
+  if (notification.type === 'room_invitation') {
+    // Navigate directly to the room with source parameter
+    navigate(`/room/${notification.roomId}`);
+  } else {
+    // For friend joined room notifications
+    navigate(`/room/${notification.roomId}`);
+  }
+};
   
   // Handle deleting a notification
   const handleDeleteNotification = async (notification: Notification) => {

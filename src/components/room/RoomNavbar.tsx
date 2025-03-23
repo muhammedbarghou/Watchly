@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Users, Copy, PhoneCall, ListVideo } from 'lucide-react';
+import { LogOut, Users, Copy, PhoneCall, ListVideo, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from "../ui/theme-toggle"
@@ -40,14 +40,13 @@ interface RoomNavbarProps {
   voiceChatPanelOpen?: boolean;
   isHost?: boolean;
   onSetNextVideo?: (videoUrl: string, playImmediately: boolean) => Promise<void>;
-  
-
+  onToggleInvite?: () => void; // Added this prop
 }
 
 const RoomNavbar: React.FC<RoomNavbarProps> = ({ 
   roomId,
   roomName,
-  // hostName,
+  hostName,
   activeUsersCount,
   voiceChatEnabled = false,
   voiceChatActiveUsers = 0,
@@ -57,7 +56,8 @@ const RoomNavbar: React.FC<RoomNavbarProps> = ({
   onToggleVoiceChat,
   voiceChatPanelOpen,
   isHost = false,
-  onSetNextVideo
+  onSetNextVideo,
+  onToggleInvite
 }) => {
   const navigate = useNavigate();
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
@@ -128,22 +128,35 @@ const RoomNavbar: React.FC<RoomNavbarProps> = ({
             </>
           )}
           
-          {
-            roomId && (
-              <>
-                <Separator orientation="vertical" className="h-6 mx-2 hidden sm:block" />
-                <h6 className="text-muted-foreground text-xs sm:text-sm font-medium">Room Id :</h6>
-                <span className="text-muted-foreground text-xs sm:text-sm font-medium">
-                  {roomId}
-                </span>
-              </>
-            )
-          }
+          {hostName && (
+            <span className="text-sm text-muted-foreground hidden md:inline-block ml-2">
+              Host: {hostName}
+            </span>
+          )}
         </div>
-
         
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          
+          {/* Invite Friends Button */}
+          {onToggleInvite && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={onToggleInvite}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Invite Friends</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           
           {/* Video Queue Button - Only visible to host */}
           {isHost && (
