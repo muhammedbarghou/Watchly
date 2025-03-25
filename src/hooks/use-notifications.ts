@@ -19,7 +19,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 
-export type NotificationType = 'friend_request' | 'room_invitation' | 'friend_joined_room';
+export type NotificationType = 'friend_request' | 'room_invitation';
 
 export interface BaseNotification {
   id: string;
@@ -47,18 +47,10 @@ export interface RoomInvitationNotification extends BaseNotification {
   documentId: string; // Firestore document ID for the room
 }
 
-// Friend joined room notification
-export interface FriendJoinedRoomNotification extends BaseNotification {
-  type: 'friend_joined_room';
-  roomId: string;
-  roomName: string;
-}
-
 // Union type of all notification types
 export type Notification = 
   | FriendRequestNotification 
-  | RoomInvitationNotification 
-  | FriendJoinedRoomNotification;
+  | RoomInvitationNotification;
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -96,6 +88,10 @@ export function useNotifications() {
       // Process each notification
       for (const docSnapshot of snapshot.docs) {
         const notificationData = docSnapshot.data() as DocumentData;
+        
+        // Skip friend_joined_room notifications
+        if (notificationData.type === 'friend_joined_room') continue;
+        
         let notification: Notification = {
           id: docSnapshot.id,
           ...notificationData,
@@ -345,38 +341,6 @@ export function useNotifications() {
     }
   }, [currentUser]);
 
-  // Notify friends when joining a room
-  const notifyFriendsOfRoomJoin = useCallback(async (
-    roomId: string,
-    roomName: string,
-    friendIds: string[]
-  ) => {
-    if (!currentUser?.uid || friendIds.length === 0) return;
-    
-    try {
-      const batch = friendIds.map(friendId => {
-        const notificationsRef = collection(db, 'users', friendId, 'notifications');
-        
-        return addDoc(notificationsRef, {
-          type: 'friend_joined_room',
-          recipientId: friendId,
-          senderId: currentUser.uid,
-          senderName: currentUser.displayName || 'Anonymous',
-          senderPhotoURL: currentUser.photoURL || null,
-          timestamp: serverTimestamp(),
-          read: false,
-          message: `joined a watch room`,
-          roomId,
-          roomName
-        });
-      });
-      
-      await Promise.all(batch);
-    } catch (error) {
-      console.error('Error notifying friends:', error);
-    }
-  }, [currentUser]);
-
   return {
     notifications,
     unreadCount,
@@ -384,7 +348,6 @@ export function useNotifications() {
     markAsRead,
     markAllAsRead,
     deleteNotification,
-    sendRoomInvitation,
-    notifyFriendsOfRoomJoin
+    sendRoomInvitation
   };
 }

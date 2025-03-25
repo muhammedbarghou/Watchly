@@ -1,6 +1,6 @@
-import { useState,  } from "react";
-import { Bell,  Check } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger,  } from "../ui/dropdown-menu";
+import { useState } from "react";
+import { Bell, Check } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { NotificationItem } from "./NotificationItem";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -25,9 +25,7 @@ export function NotificationDropdown() {
   
   // Filter notifications by type
   const friendRequests = notifications.filter(n => n.type === 'friend_request');
-  const roomNotifications = notifications.filter(
-    n => n.type === 'room_invitation' || n.type === 'friend_joined_room'
-  );
+  const roomInvitations = notifications.filter(n => n.type === 'room_invitation');
 
   // Handle accepting friend request
   const handleAcceptFriendRequest = async (notification: Notification) => {
@@ -72,23 +70,16 @@ export function NotificationDropdown() {
     }
   };
 
-const handleJoinRoom = async (notification: Notification) => {
-  if (notification.type !== 'room_invitation' && notification.type !== 'friend_joined_room') return;
-  
-  // Mark as read before navigating
-  await markAsRead(notification.id);
-  setOpen(false);
-  
-  // Navigate directly to the room instead of join-room
-  // Use the state parameter to pass roomData if available
-  if (notification.type === 'room_invitation') {
-    // Navigate directly to the room with source parameter
+  const handleJoinRoom = async (notification: Notification) => {
+    if (notification.type !== 'room_invitation') return;
+    
+    // Mark as read before navigating
+    await markAsRead(notification.id);
+    setOpen(false);
+    
+    // Navigate directly to the room
     navigate(`/room/${notification.roomId}`);
-  } else {
-    // For friend joined room notifications
-    navigate(`/room/${notification.roomId}`);
-  }
-};
+  };
   
   // Handle deleting a notification
   const handleDeleteNotification = async (notification: Notification) => {
@@ -165,10 +156,10 @@ const handleJoinRoom = async (notification: Notification) => {
               )}
             </TabsTrigger>
             <TabsTrigger value="rooms">
-              Rooms
-              {roomNotifications.length > 0 && (
+              Invites
+              {roomInvitations.length > 0 && (
                 <span className="ml-1.5 w-5 h-5 flex items-center justify-center text-xs bg-gray-200 dark:bg-gray-700 rounded-full">
-                  {roomNotifications.length}
+                  {roomInvitations.length}
                 </span>
               )}
             </TabsTrigger>
@@ -215,8 +206,8 @@ const handleJoinRoom = async (notification: Notification) => {
             </TabsContent>
             
             <TabsContent value="rooms" className="space-y-2 p-2 m-0">
-              {roomNotifications.length > 0 ? (
-                roomNotifications.map((notification) => (
+              {roomInvitations.length > 0 ? (
+                roomInvitations.map((notification) => (
                   <NotificationItem
                     key={notification.id}
                     notification={notification}
@@ -228,7 +219,7 @@ const handleJoinRoom = async (notification: Notification) => {
                 ))
               ) : (
                 <div className="px-4 py-6 text-sm text-center text-gray-400">
-                  No room notifications
+                  No room invitations
                 </div>
               )}
             </TabsContent>

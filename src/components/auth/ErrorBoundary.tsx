@@ -42,7 +42,6 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Update state with the error info for displaying stack traces
     this.setState(prevState => ({
       errorInfo,
       errorCount: prevState.errorCount + 1
@@ -50,7 +49,6 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     
     console.error('Error caught by ErrorBoundary:', error, errorInfo);
     
-    // Report to error tracking service if needed
     this.reportError(error, errorInfo);
     
     if (this.props.onError) {
@@ -59,8 +57,6 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   reportError(_error: Error, _errorInfo: ErrorInfo): void {
-    // This can be connected to an error reporting service like Sentry, LogRocket, etc.
-    // Example: Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
   }
 
   handleReset = (): void => {
@@ -109,7 +105,6 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 }
 
-// Separate error display component allows for more complex UI handling
 function ErrorDisplay({
   error,
   errorInfo,
@@ -131,11 +126,8 @@ function ErrorDisplay({
 }) {
   const [showDetails, setShowDetails] = useState(false);
   
-  // Get a simplified error message if possible
   const getSimplifiedMessage = () => {
     const message = error?.message || 'An unexpected error occurred';
-    
-    // Try to provide more user-friendly messages for common errors
     if (message.includes('NetworkError') || message.includes('Failed to fetch')) {
       return 'Network error. Please check your internet connection.';
     }
@@ -147,8 +139,6 @@ function ErrorDisplay({
     if (message.includes('TypeError') && message.includes('undefined')) {
       return 'A data error occurred. Some information may be missing.';
     }
-    
-    // Keep original message if we can't simplify it
     return message;
   };
 
@@ -220,7 +210,6 @@ function ErrorDisplay({
               </div>
             )}
           </CardContent>
-          
           <CardFooter className="flex flex-col sm:flex-row gap-3 bg-gray-50 border-t border-gray-100">
             <Button 
               onClick={onReset}
@@ -240,8 +229,6 @@ function ErrorDisplay({
             </Button>
           </CardFooter>
         </Card>
-        
-        {/* Helpful tips for recovery */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

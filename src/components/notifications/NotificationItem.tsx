@@ -17,8 +17,6 @@ interface NotificationItemProps {
   onJoin?: (notification: Notification) => void;
   onDelete?: (notification: Notification) => void;
   onRead?: (notification: Notification) => void;
-  
-
 }
 
 export function NotificationItem({ 
@@ -35,7 +33,6 @@ export function NotificationItem({
       case 'friend_request':
         return <UserPlus className="w-3.5 h-3.5 text-red-500" />;
       case 'room_invitation':
-      case 'friend_joined_room':
         return <Video className="w-3.5 h-3.5 text-blue-500" />;
       default:
         return null;
@@ -62,8 +59,6 @@ export function NotificationItem({
         return 'Friend Request';
       case 'room_invitation':
         return 'Room Invitation';
-      case 'friend_joined_room':
-        return 'Friend Joined Room';
       default:
         return 'Notification';
     }
@@ -78,8 +73,6 @@ export function NotificationItem({
         return `${senderName} wants to be your friend`;
       case 'room_invitation':
         return `${senderName} invited you to join "${notification.roomName || 'a room'}"`;
-      case 'friend_joined_room':
-        return `${senderName} joined room "${notification.roomName || 'your room'}"`;
       default:
         // Add type assertion to handle the 'never' type
         return (notification as any).message || 'You have a new notification';
@@ -201,27 +194,6 @@ export function NotificationItem({
                 >
                   <X className="w-4 h-4 mr-1" />
                   Decline
-                </Button>
-              </div>
-            )}
-
-            {notification.type === 'friend_joined_room' && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                <Button
-                  size="sm"
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                  onClick={(e) => handleButtonClick(onJoin, e)}
-                  disabled={!notification.roomId}
-                >
-                  <Video className="w-4 h-4 mr-1" />
-                  Join Room
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => handleButtonClick(onDelete, e)}
-                >
-                  Dismiss
                 </Button>
               </div>
             )}
