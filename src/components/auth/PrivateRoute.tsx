@@ -1,23 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useAppSelector } from '@/store/Store';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { LockIcon, LogIn, Mail, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
-import { getAuth } from 'firebase/auth';
 import Loader from '../Loader';
-
-// Define the provider data interface
-interface UserProviderData {
-  providerId: string;
-  uid?: string;
-  displayName?: string | null;
-  email?: string | null;
-  phoneNumber?: string | null;
-  photoURL?: string | null;
-}
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -25,53 +13,55 @@ interface PrivateRouteProps {
 }
 
 export function PrivateRoute({ children, requiresEmailVerification = true }: PrivateRouteProps) {
-  const { currentUser, loading } = useAppSelector((state) => state.auth);
-  const { sendEmailVerification } = useAuth();
+  const { 
+    currentUser, 
+    loading, 
+    isThirdPartyAuth, 
+    isEmailVerified, 
+    sendEmailVerification 
+  } = useAuth();
+  
   const navigate = useNavigate();
   const [sending, setSending] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
-  const [processingRedirect, setProcessingRedirect] = useState(true);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
+  // Add safety timeout to prevent infinite loading
   useEffect(() => {
-    const auth = getAuth();
-    
-    const checkForRedirect = async () => {
-      try {
-        // Add a small delay to allow Firebase to restore auth state after redirects
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setProcessingRedirect(false);
-        console.log('Redirect processing completed');
-      } catch (error) {
-        console.error('Error handling redirect:', error);
-        setProcessingRedirect(false);
+    const timer = setTimeout(() => {
+      if (!initialLoadComplete) {
+        console.log('Forcing initial load complete after timeout');
+        setInitialLoadComplete(true);
       }
-    };
+    }, 3000); // 3 second timeout
 
-    checkForRedirect();
+    return () => clearTimeout(timer);
   }, []);
 
+  // Mark initial load complete when loading finishes
   useEffect(() => {
-    const auth = getAuth();
-    const firebaseUser = auth.currentUser;
-    const providerData = firebaseUser?.providerData || [];
-    
-    console.log('PrivateRoute auth state:', { 
-      currentUser, 
-      loading, 
-      processingRedirect,
-      emailVerified: currentUser?.emailVerified,
-      firebaseUser,
-      providerData
-    });
-    
-    if (!loading) {
-      setAuthChecked(true);
+    if (!loading && !initialLoadComplete) {
+      console.log('Initial auth load completed');
+      setInitialLoadComplete(true);
     }
-  }, [currentUser, loading, processingRedirect]);
+  }, [loading, initialLoadComplete]);
+
+  // Log auth state for debugging
+  useEffect(() => {
+    console.log('PrivateRoute auth state:', { 
+      currentUser: !!currentUser, 
+      loading, 
+      isThirdPartyAuth,
+      isEmailVerified,
+      initialLoadComplete,
+      requiresEmailVerification
+    });
+  }, [currentUser, loading, isThirdPartyAuth, isEmailVerified, initialLoadComplete, requiresEmailVerification]);
 
   const handleResendVerification = async () => {
     try {
       setSending(true);
+      // Add a delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1000));
       await sendEmailVerification();
       toast.success('Verification email sent. Please check your inbox.');
     } catch (error) {
@@ -82,26 +72,12 @@ export function PrivateRoute({ children, requiresEmailVerification = true }: Pri
     }
   };
 
-  const isThirdPartyAuth = React.useMemo(() => {
-    if (!currentUser) return false;
-    
-    const auth = getAuth();
-    const firebaseUser = auth.currentUser;
-    const providerData = firebaseUser?.providerData || [];
-    
-    return providerData.some(
-      (provider: UserProviderData) => 
-        provider.providerId === 'google.com' || 
-        provider.providerId === 'facebook.com'
-    );
-  }, [currentUser]);
-
-  if (loading || processingRedirect || !authChecked) {
-    console.log('Showing loading state', { loading, processingRedirect, authChecked });
-    return (
-      <Loader/>
-    );
+  // Show loading state during initial load
+  if (loading && !initialLoadComplete) {
+    return <Loader />;
   }
+
+  // If not authenticated, show login required screen
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-netflix-black flex items-center justify-center p-4">
@@ -183,13 +159,14 @@ export function PrivateRoute({ children, requiresEmailVerification = true }: Pri
       </div>
     );
   }
-  if (requiresEmailVerification && !currentUser.emailVerified && !isThirdPartyAuth) {
-    console.log('Email not verified, showing verification screen', { 
-      requiresEmailVerification, 
-      emailVerified: currentUser.emailVerified,
-      isThirdPartyAuth
-    });
-    
+
+  // Check if email verification is required
+  const needsVerification = requiresEmailVerification && 
+                          !isEmailVerified && 
+                          !isThirdPartyAuth;
+  
+  // If verification needed, show verification screen
+  if (needsVerification) {
     return (
       <div className="min-h-screen bg-netflix-black flex items-center justify-center p-4">
         <motion.div 
@@ -297,5 +274,7 @@ export function PrivateRoute({ children, requiresEmailVerification = true }: Pri
       </div>
     );
   }
+
+  // User is authenticated and verified (or verification not required)
   return <>{children}</>;
 }

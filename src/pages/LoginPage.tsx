@@ -30,6 +30,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { AlertCircle, EyeOff, Eye, Mail, ArrowRight, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import logo from "@/assets/logo.png"
+import { getAuth, onAuthStateChanged } from 'firebase/auth'
+import { toast } from 'sonner'
 
 // Define schema for validation
 const loginSchema = z.object({
@@ -74,6 +76,38 @@ export function LoginPage() {
     },
   });
 
+  // Check if user is already logged in - redirect if they are
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // If the user is already authenticated but needs verification
+        if (!user.emailVerified) {
+          // Check if they're using third-party auth
+          const isThirdParty = user.providerData.some(
+            provider => provider.providerId === 'google.com' || provider.providerId === 'facebook.com'
+          );
+          
+          // If using email/password and not verified, show verification screen
+          if (!isThirdParty) {
+            setNeedsVerification(true);
+            setUserEmail(user.email || '');
+          } else {
+            // If using third-party auth, redirect to hub
+            console.log('User authenticated with third-party provider, redirecting to hub');
+            navigate('/hub', { replace: true });
+          }
+        } else {
+          // User is verified, redirect to hub
+          console.log('User authenticated and verified, redirecting to hub');
+          navigate('/hub', { replace: true });
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
+
   // Get stored email on component mount
   useEffect(() => {
     const storedEmail = localStorage.getItem('lastLoginEmail');
@@ -100,7 +134,10 @@ export function LoginPage() {
       }
       
       await signInWithEmail(data.email, data.password);
-      navigate('/hub');
+      
+      // After successful login, let the auth state listener handle the redirect
+      console.log('Sign in successful, authentication state listener will handle redirect');
+
     } catch (err: any) {
       console.error('Login error:', err);
       
@@ -115,24 +152,33 @@ export function LoginPage() {
     }
   };
 
-  // Social sign-in handler
+  // Social sign-in handler with improved logging
   const handleSocialSignIn = async (provider: 'google' | 'facebook') => {
     try {
       setIsSigningIn(true);
       setError('');
       clearError();
       
+      console.log(`Starting ${provider} sign-in process`);
       const signInMethod = provider === 'google' ? signInWithGoogle : signInWithFacebook;
+      
       await signInMethod();
-      navigate('/hub');
+      console.log(`${provider} sign-in successful, auth state listener will handle redirect`);
+      
+      // Don't navigate here - let the auth state listener handle it
+      
     } catch (err: any) {
       console.error(`${provider} sign in error:`, err);
       
-      if (err.message && err.message.includes('verify your email')) {
+      // Handle specific error cases
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        console.log('Sign-in popup was closed by user');
+        // Don't show error for user-cancelled popups
+      } else if (err.message && err.message.includes('verify your email')) {
         setNeedsVerification(true);
         setUserEmail(err.email || '');
       } else {
-        setError(`Failed to sign in with ${provider}. Please try again.`);
+        setError(`Failed to sign in with ${provider}. ${err.message || 'Please try again.'}`);
       }
     } finally {
       setIsSigningIn(false);
@@ -144,8 +190,7 @@ export function LoginPage() {
     try {
       await sendEmailVerification();
       setError('');
-      // Show success message with toast instead of alert
-      // You can use a toast library here like react-hot-toast
+      toast.success('Verification email sent. Please check your inbox.');
     } catch (err: any) {
       console.error('Error sending verification email:', err);
       setError('Failed to send verification email. Please try again.');
