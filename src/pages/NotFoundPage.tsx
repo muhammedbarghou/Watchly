@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo (1).png";
 import { Button } from "@/components/ui/button";
 import { Home, ArrowLeft, Search, AlertCircle } from 'lucide-react';
 

@@ -3,8 +3,8 @@ import { NotificationDropdown } from "../notifications/NotificationDropdown"
 import { Button } from "../ui/button"
 import { ThemeToggle } from "../ui/theme-toggle"
 import SearchComponent from "../user/SearchUsers"
-import logo from "../../assets/logo.png"
-import logo2 from "../../assets/Logo2.png"
+import logo from "@/assets/logo (1).png"
+import logo2 from "@/assets/Logo2.png"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import LanguageSettings from '@/components/LanguageSettings';
 

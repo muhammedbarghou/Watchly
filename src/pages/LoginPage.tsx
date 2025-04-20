@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { 
   Card, 
   CardContent, 
@@ -29,7 +28,7 @@ import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { AlertCircle, EyeOff, Eye, Mail, ArrowRight, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
-import logo from "@/assets/logo.png"
+import logo from "@/assets/logo (1).png"
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { toast } from 'sonner'
 

@@ -4,8 +4,8 @@ import { LogOut, Users, Copy, PhoneCall, ListVideo, UserPlus } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from "../ui/theme-toggle"
-import logo from "../../assets/logo.png"
-import logo2 from "../../assets/Logo2.png"
+import logo from "@/assets/logo (1).png"
+import logo2 from "@/assets/Logo2.png"
 import { 
   Tooltip, 
   TooltipContent, 
